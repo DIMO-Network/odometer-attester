@@ -89,7 +89,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating challenge request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -112,12 +112,11 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error unmarshalling response body: %w", err)
 	}
-	nonce := challengeResponse.Challenge
-	c.logger.Debug().Msgf("Challenge generated: %s", nonce)
+	challenge := challengeResponse.Challenge
+	c.logger.Debug().Msgf("Challenge generated: %s", challenge)
 
 	// Hash and sign challenge
-	challenge := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(nonce), nonce)
-	signedChallenge, err := c.signChallenge(challenge)
+	signedChallenge, err := signChallenge(challenge, c.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("error signing challenge: %w", err)
 	}
@@ -143,7 +142,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating submit request: %w", err)
 	}
-	submitReq.Header.Set("Content-Type", "application/json")
+	submitReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	submitResp, err := c.client.Do(submitReq)
 	if err != nil {
@@ -171,13 +170,14 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 }
 
 // signChallenge signs the challenge message with the configured private key.
-func (c *Client) signChallenge(message string) (string, error) {
-	// Hash the message
-	keccak256Hash := crypto.Keccak256Hash([]byte(message))
-
-	signedMsg, err := crypto.Sign(keccak256Hash[:], c.privateKey)
+func signChallenge(message string, privateKey *ecdsa.PrivateKey) (string, error) {
+	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), message)
+	sign := crypto.Keccak256Hash([]byte(msg))
+	signature, err := crypto.Sign(sign.Bytes(), privateKey)
 	if err != nil {
-		return "", fmt.Errorf("error signing message: %w", err)
+		return "", err
 	}
-	return "0x" + hex.EncodeToString(signedMsg), nil
+
+	signature[64] += 27 // Support old Ethereum format
+	return "0x" + hex.EncodeToString(signature), nil
 }
