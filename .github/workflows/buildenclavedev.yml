@@ -122,5 +122,5 @@ jobs:
           message: "Update Image Version to ${{ steps.slug.outputs.sha7 }}\n\n${{ needs.build-enclave.outputs.measurements }}"
           changes: |
             {
-              "app.image.tag": "${{ steps.slug.outputs.sha7 }}",
+              "app.image.tag": "${{ steps.slug.outputs.sha7 }}"
             }
