@@ -43,11 +43,11 @@ func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClie
 		return nil, fmt.Errorf("token cache is required")
 	}
 
-	if settings.TokenExchangeBaseURL == "" {
+	if settings.TokenExchangeURL == "" {
 		return nil, fmt.Errorf("token exchange base URL is required")
 	}
 
-	if settings.DeveloperLicenseID == "" {
+	if settings.DeveloperLicense == "" {
 		return nil, fmt.Errorf("dev license ID is required")
 	}
 
@@ -56,7 +56,7 @@ func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClie
 	}
 
 	// Create token exchange URL
-	tokenExchangeURL, err := url.JoinPath(settings.TokenExchangeBaseURL, tokenExchangeEndpoint)
+	tokenExchangeURL, err := url.JoinPath(settings.TokenExchangeURL, tokenExchangeEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create token exchange URL: %w", err)
 	}
@@ -66,7 +66,7 @@ func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClie
 		tokenExchangeURL:   tokenExchangeURL,
 		tokenCache:         tokenCache,
 		nftContractAddress: settings.VehicleNFTContractAddress,
-		devLicenseID:       settings.DeveloperLicenseID,
+		devLicenseID:       settings.DeveloperLicense,
 	}, nil
 }
 

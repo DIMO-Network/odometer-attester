@@ -16,9 +16,15 @@ bridge:
         - all
   env:
     LOG_LEVEL: DEBUG
-    PORT: '8080'
-    MON_PORT: '8888'
-    VSOCK_INIT_PORT: '5000'
+    PORT: "8080"
+    MON_PORT: "8888"
+    VSOCK_INIT_PORT: "5000"
+    VEHICLE_NFT_CONTRACT_ADDRESS: "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
+    DEVELOPER_LICENSE: "0x9A9D2E717bB005B240094ba761Ff074d392C7C85"
+    DEX_URL: "https://dex.dimo.zone"
+    IDENTITY_API_URL: "https://identity-api.dimo.zone"
+    TELEMETRY_API_URL: "https://telemetry-api.dimo.zone"
+    TOKEN_EXCHANGE_URL: "https://token-exchange.dimo.zone"
   ports:
     - name: mon-http
       containerPort: 8888

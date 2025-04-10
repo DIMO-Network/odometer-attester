@@ -8,12 +8,11 @@ type Settings struct {
 	LogLevel    string `env:"LOG_LEVEL"   yaml:"logLevel"`
 	Port        int    `env:"PORT"        yaml:"port"`
 	MonPort     int    `env:"MON_PORT"    yaml:"monPort"`
-	EnclaveCID  uint32 `env:"ENCLAVE_CID" yaml:"enclaveCid"`
 
 	// Token Exchange settings
-	TokenExchangeBaseURL      string         `env:"TOKEN_EXCHANGE_BASE_URL"      yaml:"tokenExchangeBaseUrl"`
+	TokenExchangeURL          string         `env:"TOKEN_EXCHANGE_URL"           yaml:"tokenExchangeUrl"`
 	VehicleNFTContractAddress common.Address `env:"VEHICLE_NFT_CONTRACT_ADDRESS" yaml:"vehicleNftContractAddress"`
-	DeveloperLicenseID        string         `env:"DEVELOPER_LICENSE_ID"         yaml:"developerLicenseId"`
+	DeveloperLicense          string         `env:"DEVELOPER_LICENSE"            yaml:"developerLicense"`
 
 	// Dex settings
 	DexURL     string `env:"DEX_URL"     yaml:"dexUrl"`
