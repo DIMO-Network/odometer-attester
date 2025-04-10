@@ -21,10 +21,10 @@ bridge:
     VSOCK_INIT_PORT: '5000'
     VEHICLE_NFT_CONTRACT_ADDRESS: '0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF'
     DEVELOPER_LICENSE: '0xd848A3f7501979069E1DBC17f366379f34187EA6'
-    DEX_URL: 'https://auth.dimo.zone'
-    IDENTITY_API_URL: 'https://identity-api.dimo.zone'
-    TELEMETRY_API_URL: 'https://telemetry-api.dimo.zone'
-    TOKEN_EXCHANGE_URL: 'https://token-exchange.dimo.zone'
+    DEX_URL: https://auth.dimo.zone
+    IDENTITY_API_URL: https://identity-api.dimo.zone
+    TELEMETRY_API_URL: https://telemetry-api.dimo.zone
+    TOKEN_EXCHANGE_URL: https://token-exchange.dimo.zone
     DEV_FAKE_KEY: ''
   ports:
     - name: mon-http
@@ -44,7 +44,7 @@ app:
   image:
     repository: dimozone/odometer-attester-enclave
     pullPolicy: IfNotPresent
-    tag: 1913f59
+    tag: 67416cb
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
