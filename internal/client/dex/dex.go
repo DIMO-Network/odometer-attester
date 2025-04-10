@@ -105,6 +105,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	}
 
 	var challengeResponse ChallengeResponse
+	logger.Debug().Msgf("Challenge response: %s", string(body))
 	err = json.Unmarshal(body, &challengeResponse)
 	if err != nil {
 		return "", fmt.Errorf("error unmarshalling response body: %w", err)

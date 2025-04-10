@@ -50,6 +50,10 @@ func main() {
 		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
 	settings := enclaveSetup.Config()
+	err = enclave.SetLoggerLevel(settings.LogLevel)
+	if err != nil {
+		tmpLogger.Fatal().Err(err).Msg("Failed to set logger level.")
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
