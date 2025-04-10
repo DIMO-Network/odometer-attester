@@ -127,5 +127,5 @@ jobs:
           message: "Update Image Version to ${{ steps.tag.outputs.tag }}\n\n${{ needs.build-enclave.outputs.measurements }}"
           changes: |
             {
-              "app.image.tag": "${{ steps.tag.outputs.tag }}",
+              "app.image.tag": "${{ steps.tag.outputs.tag }}"
             }
