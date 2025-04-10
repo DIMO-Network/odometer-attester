@@ -112,7 +112,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	// Check status code
 	if resp.StatusCode != http.StatusOK {

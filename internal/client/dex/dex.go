@@ -93,7 +93,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error generating challenge: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("error generating challenge: %s", resp.Status)
@@ -146,7 +146,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error submitting challenge: %w", err)
 	}
-	defer submitResp.Body.Close()
+	defer submitResp.Body.Close() //nolint:errcheck
 
 	if submitResp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("error submitting challenge: %s", submitResp.Status)
