@@ -13,6 +13,7 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/DIMO-Network/shared/privileges"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -33,10 +34,11 @@ type Client struct {
 	tokenCache         *tokencache.Cache
 	nftContractAddress common.Address
 	devLicenseID       string
+	logger             *zerolog.Logger
 }
 
 // NewClient creates a new instance of Client with all config from settings.
-func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClient *http.Client) (*Client, error) {
+func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClient *http.Client, logger zerolog.Logger) (*Client, error) {
 	// Validate required settings
 	if tokenCache == nil {
 		return nil, fmt.Errorf("token cache is required")
@@ -66,6 +68,7 @@ func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClie
 		tokenCache:         tokenCache,
 		nftContractAddress: settings.VehicleNFTContractAddress,
 		devLicenseID:       settings.DeveloperLicense,
+		logger:             &logger,
 	}, nil
 }
 

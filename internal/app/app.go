@@ -37,7 +37,7 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, clientPo
 	}
 
 	// Setup dex client for developer license tokens
-	dexClient, err := dex.NewClient(settings, privateKey, httpClient)
+	dexClient, err := dex.NewClient(settings, privateKey, httpClient, logger.With().Str("component", "dex").Logger())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dex client: %w", err)
 	}
@@ -50,7 +50,7 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, clientPo
 	)
 
 	// Setup token exchange client with token cache
-	tokenExchangeClient, err := tokenexchange.NewClient(settings, devLicenseTokenCache, httpClient)
+	tokenExchangeClient, err := tokenexchange.NewClient(settings, devLicenseTokenCache, httpClient, logger.With().Str("component", "tokenexchange").Logger())
 	if err != nil {
 		return nil, err
 	}

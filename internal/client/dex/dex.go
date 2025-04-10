@@ -14,7 +14,7 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -39,10 +39,11 @@ type Client struct {
 	dexURL     *url.URL
 	privateKey *ecdsa.PrivateKey
 	client     *http.Client
+	logger     *zerolog.Logger
 }
 
 // NewClient creates a new Dex client.
-func NewClient(settings *config.Settings, privateKey *ecdsa.PrivateKey, client *http.Client) (*Client, error) {
+func NewClient(settings *config.Settings, privateKey *ecdsa.PrivateKey, client *http.Client, logger zerolog.Logger) (*Client, error) {
 	if client == nil {
 		return nil, fmt.Errorf("HTTPClient is nil")
 	}
@@ -58,6 +59,7 @@ func NewClient(settings *config.Settings, privateKey *ecdsa.PrivateKey, client *
 		dexURL:     dexURL,
 		privateKey: privateKey,
 		client:     client,
+		logger:     &logger,
 	}, nil
 }
 
@@ -105,13 +107,13 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	}
 
 	var challengeResponse ChallengeResponse
-	logger.Debug().Msgf("Challenge response: %s", string(body))
+	c.logger.Debug().Msgf("Challenge response: %s", string(body))
 	err = json.Unmarshal(body, &challengeResponse)
 	if err != nil {
 		return "", fmt.Errorf("error unmarshalling response body: %w", err)
 	}
 	nonce := challengeResponse.Challenge
-	log.Debug().Msgf("Challenge generated: %s", nonce)
+	c.logger.Debug().Msgf("Challenge generated: %s", nonce)
 
 	// Hash and sign challenge
 	challenge := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(nonce), nonce)
@@ -119,7 +121,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error signing challenge: %w", err)
 	}
-	log.Debug().Msgf("challenge signed: %s", signedChallenge)
+	c.logger.Debug().Msgf("challenge signed: %s", signedChallenge)
 
 	// Submit challenge
 	state := challengeResponse.State
