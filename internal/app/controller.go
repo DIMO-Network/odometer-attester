@@ -87,3 +87,7 @@ func (c *Controller) GetKeys(ctx *fiber.Ctx) error {
 	}
 	return ctx.JSON(keyResponse)
 }
+
+func (c *Controller) GetUnsafeKeys(ctx *fiber.Ctx) error {
+	return ctx.JSON(c.nsmResult)
+}

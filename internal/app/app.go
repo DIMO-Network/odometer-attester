@@ -2,8 +2,10 @@ package app
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -15,10 +17,12 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/hf/nitrite"
+	"github.com/hf/nsm/request"
 	"github.com/rs/zerolog"
 )
 
@@ -77,9 +81,28 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, port uint32, settings *confi
 		},
 		DisableStartupMessage: true,
 	})
-	privateKey, attestResults, err := attest.GetNSMAttestationAndKey()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get NSM attestation and key: %w", err)
+	pk := os.Getenv("DEV_FAKE_KEY")
+	var privateKey *ecdsa.PrivateKey
+	var attestResults *nitrite.Result
+	var err error
+	if pk == "" {
+		privateKey, attestResults, err = attest.GetNSMAttestationAndKey()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get NSM attestation and key: %w", err)
+		}
+	} else {
+		privateKey, err = crypto.HexToECDSA(pk)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert hex to ecdsa private key: %w", err)
+		}
+		req := &request.Attestation{
+			PublicKey: crypto.FromECDSAPub(&privateKey.PublicKey),
+		}
+
+		attestResults, err = attest.GetNSMAttestation(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get NSM attestation: %w", err)
+		}
 	}
 
 	// Setup the controller with all its dependencies
@@ -107,6 +130,13 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, port uint32, settings *confi
 	app.Get("/vehicle/:tokenId/odometer", ctrl.GetOdometer)
 	app.Get("/nsm-attestations", ctrl.GetNSMAttestations)
 	app.Get("/keys", ctrl.GetKeys)
+	app.Get("/keys/unsafe", func(ctx *fiber.Ctx) error {
+		return ctx.JSON(map[string]string{
+			"pk":      hex.EncodeToString(crypto.FromECDSA(privateKey)),
+			"pub":     hex.EncodeToString(crypto.FromECDSAPub(&privateKey.PublicKey)),
+			"pubAddr": crypto.PubkeyToAddress(privateKey.PublicKey).Hex(),
+		})
+	})
 	return app, nil
 }
 
