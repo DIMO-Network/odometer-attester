@@ -34,14 +34,12 @@ start() {
   # wait forever
   while true
   do
-    nitro-cli describe-enclaves 2>&1 
-    sleep 15
+    tail -f /dev/null
   done
 
 }
 
 healthcheck() {
-  return 0
   cmd="nitro-cli describe-enclaves | jq -e '"'[ .[] | select( .EnclaveName == "'$APP_NAME'" and .State == "RUNNING") ] | length == 1 '"'"
   bash -c "$cmd"
 }
