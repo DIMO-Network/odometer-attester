@@ -89,7 +89,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating challenge request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -143,7 +143,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating submit request: %w", err)
 	}
-	submitReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	submitReq.Header.Set("Content-Type", "application/json")
 
 	submitResp, err := c.client.Do(submitReq)
 	if err != nil {
