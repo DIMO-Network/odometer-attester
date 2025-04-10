@@ -1,14 +1,14 @@
 replicaCount: 1
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: ''
+fullnameOverride: ''
 podAnnotations: {}
 podSecurityContext: {}
 bridge:
   image:
     repository: dimozone/enclave-bridge
     pullPolicy: IfNotPresent
-    tag: "0.0.1"
+    tag: 0.0.1
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
@@ -16,9 +16,9 @@ bridge:
         - all
   env:
     LOG_LEVEL: DEBUG
-    PORT: "8080"
-    MON_PORT: "8888"
-    VSOCK_INIT_PORT: "5000"
+    PORT: '8080'
+    MON_PORT: '8888'
+    VSOCK_INIT_PORT: '5000'
   ports:
     - name: mon-http
       containerPort: 8888
@@ -37,26 +37,26 @@ app:
   image:
     repository: dimozone/odometer-attester-enclave
     pullPolicy: IfNotPresent
-    tag: "2864263"
+    tag: 7c8f132
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
       drop:
         - all
   env:
-    ENCLAVE_CPU_COUNT: "2"
-    ENCLAVE_MEMORY_SIZE: "1000"
-    ENCLAVE_CID: "16"
+    ENCLAVE_CPU_COUNT: '2'
+    ENCLAVE_MEMORY_SIZE: '1000'
+    ENCLAVE_CID: '16'
     ENCLAVE_DEBUG_MODE: null
   ports: null
   resources:
     limits:
-      aws.ec2.nitro/nitro_enclaves: "1"
+      aws.ec2.nitro/nitro_enclaves: '1'
       hugepages-1Gi: 1Gi
       memory: 512Mi
       cpu: 500m
     requests:
-      aws.ec2.nitro/nitro_enclaves: "1"
+      aws.ec2.nitro/nitro_enclaves: '1'
       hugepages-1Gi: 1Gi
       memory: 128Mi
       cpu: 100m
@@ -76,10 +76,10 @@ ingress:
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
-    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
-    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
     nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dimo.zone, https://admin.team.dimo.zone
-    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-rps: '50'
     external-dns.alpha.kubernetes.io/hostname: odometer-attester.dev.dimo.zone
   hosts:
     - host: odometer-attester.dev.dimo.zone
@@ -93,7 +93,7 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
 nodeSelector:
-  enclave: "true"
+  enclave: 'true'
 affinity: {}
 podDisruptionBudget:
   minAvailable: 0
@@ -103,7 +103,7 @@ kafka:
 serviceAccount:
   create: true
   annotations: {}
-  name: ""
+  name: ''
 serviceMonitor:
   enabled: true
   path: /metrics
