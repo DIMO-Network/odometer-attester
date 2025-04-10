@@ -2,10 +2,8 @@ module github.com/DIMO-Network/odometer-attester
 
 go 1.24
 
-replace github.com/DIMO-Network/enclave-bridge => ../enclave-bridge
-
 require (
-	github.com/DIMO-Network/enclave-bridge v0.0.1
+	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250410145855-c97ab886f69f
 	github.com/DIMO-Network/shared v0.12.10
 	github.com/ethereum/go-ethereum v1.15.7
 	github.com/fxamacker/cbor/v2 v2.8.0

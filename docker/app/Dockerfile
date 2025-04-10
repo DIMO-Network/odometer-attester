@@ -17,7 +17,6 @@ ENV CGO_ENABLED=0
 WORKDIR /build
 COPY . ./
 
-RUN go mod tidy
 RUN make build
 
 FROM gcr.io/distroless/base AS final
