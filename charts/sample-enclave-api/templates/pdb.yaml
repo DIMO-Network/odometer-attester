@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "odometer-attester.fullname" . }}
+  labels:
+    {{- include "odometer-attester.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+    {{- include "odometer-attester.selectorLabels" . | nindent 6 }}
+{{ toYaml .Values.podDisruptionBudget | indent 2 }}
