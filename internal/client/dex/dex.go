@@ -149,7 +149,8 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	defer submitResp.Body.Close() //nolint:errcheck
 
 	if submitResp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("error submitting challenge: %s", submitResp.Status)
+		bodyBytes, _ := io.ReadAll(submitResp.Body)
+		return "", fmt.Errorf("token exchange API returned non-200 status code: %d; %s", submitResp.StatusCode, string(bodyBytes))
 	}
 
 	submitBody, err := io.ReadAll(submitResp.Body)

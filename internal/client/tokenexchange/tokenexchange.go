@@ -13,7 +13,6 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/DIMO-Network/shared/privileges"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -117,8 +116,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	// Check status code
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Error().Str("response", string(bodyBytes)).Msgf("token exchange API returned non-200 status code: %d", resp.StatusCode)
-		return "", fmt.Errorf("token exchange API returned non-200 status code: %d", resp.StatusCode)
+		return "", fmt.Errorf("token exchange API returned non-200 status code: %d; %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	// Read response body
