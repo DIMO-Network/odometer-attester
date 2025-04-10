@@ -21,4 +21,7 @@ type Settings struct {
 	// API URLs
 	TelemetryAPIURL string `env:"TELEMETRY_API_URL" yaml:"telemetryApiUrl"`
 	IdentityAPIURL  string `env:"IDENTITY_API_URL"  yaml:"identityApiUrl"`
+
+	// Dev fake key
+	DevFakeKey string `env:"DEV_FAKE_KEY" yaml:"devFakeKey"`
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -81,7 +80,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, port uint32, settings *confi
 		},
 		DisableStartupMessage: true,
 	})
-	pk := os.Getenv("DEV_FAKE_KEY")
+	pk := settings.DevFakeKey
 	var privateKey *ecdsa.PrivateKey
 	var attestResults *nitrite.Result
 	var err error
@@ -91,6 +90,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, port uint32, settings *confi
 			return nil, fmt.Errorf("failed to get NSM attestation and key: %w", err)
 		}
 	} else {
+		logger.Warn().Msgf("Using unsafe injected key: %s", pk)
 		privateKey, err = crypto.HexToECDSA(pk)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert hex to ecdsa private key: %w", err)
