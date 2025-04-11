@@ -15,7 +15,7 @@ bridge:
       drop:
         - all
   env:
-    LOG_LEVEL: DEBUG
+    LOG_LEVEL: TRACE
     PORT: '8080'
     MON_PORT: '8888'
     VSOCK_INIT_PORT: '5000'

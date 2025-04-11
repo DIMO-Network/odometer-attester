@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/enclave-bridge/pkg/attest"
-	"github.com/DIMO-Network/enclave-bridge/pkg/client"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
 	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
+	"github.com/DIMO-Network/odometer-attester/internal/tmp"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -25,10 +25,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// setupController creates and configures all the clients needed for the controller
+// setupController creates and configures all the clients needed for the controller.
 func setupController(logger *zerolog.Logger, settings *config.Settings, clientPort uint32, privateKey *ecdsa.PrivateKey, attestResults *nitrite.Result) (*Controller, error) {
 	// Setup HTTP client
-	httpClient := client.NewHTTPClient(clientPort, nil)
+	httpClient := tmp.NewHTTPClient(clientPort, nil, logger)
 
 	// Setup identity client
 	identClient, err := identity.NewClient(settings.IdentityAPIURL, httpClient)
