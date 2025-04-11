@@ -12,6 +12,7 @@ import (
 	"github.com/DIMO-Network/cloudevent"
 	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
+	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
@@ -37,9 +38,10 @@ type Controller struct {
 }
 
 func NewController(
+	settings *config.Settings,
+	logger *zerolog.Logger,
 	identityClient *identity.Client,
 	telemetryClient *telemetry.Client,
-	logger *zerolog.Logger,
 	privateKey *ecdsa.PrivateKey,
 	nsmResult *nitrite.Result,
 ) (*Controller, error) {
@@ -52,6 +54,7 @@ func NewController(
 		logger:          logger,
 		privateKey:      privateKey,
 		publicKey:       &privateKey.PublicKey,
+		devLicense:      settings.DeveloperLicense,
 		nsmResult:       nsmResult,
 	}, nil
 }

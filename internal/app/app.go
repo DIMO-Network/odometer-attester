@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/enclave-bridge/pkg/attest"
+	"github.com/DIMO-Network/enclave-bridge/pkg/client"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
 	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
-	"github.com/DIMO-Network/odometer-attester/internal/tmp"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -28,7 +28,7 @@ import (
 // setupController creates and configures all the clients needed for the controller.
 func setupController(logger *zerolog.Logger, settings *config.Settings, clientPort uint32, privateKey *ecdsa.PrivateKey, attestResults *nitrite.Result) (*Controller, error) {
 	// Setup HTTP client
-	httpClient := tmp.NewHTTPClient(clientPort, nil, logger)
+	httpClient := client.NewHTTPClient(clientPort, nil)
 
 	// Setup identity client
 	identClient, err := identity.NewClient(settings.IdentityAPIURL, httpClient)
@@ -69,7 +69,7 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, clientPo
 	}
 
 	// Create controller with all required clients
-	return NewController(identClient, telemetryClient, logger, privateKey, attestResults)
+	return NewController(settings, logger, identClient, telemetryClient, privateKey, attestResults)
 }
 
 // CreateEnclaveWebServer creates a new web server with the given logger and settings.

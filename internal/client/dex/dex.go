@@ -107,20 +107,17 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 	}
 
 	var challengeResponse ChallengeResponse
-	c.logger.Debug().Msgf("Challenge response: %s", string(body))
 	err = json.Unmarshal(body, &challengeResponse)
 	if err != nil {
 		return "", fmt.Errorf("error unmarshalling response body: %w", err)
 	}
 	challenge := challengeResponse.Challenge
-	c.logger.Debug().Msgf("Challenge generated: %s", challenge)
 
 	// Hash and sign challenge
 	signedChallenge, err := signChallenge(challenge, c.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("error signing challenge: %w", err)
 	}
-	c.logger.Debug().Msgf("challenge signed: %s", signedChallenge)
 
 	// Submit challenge
 	state := challengeResponse.State
