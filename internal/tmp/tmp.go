@@ -34,7 +34,7 @@ func NewHTTPClient(port uint32, tlsConfig *tls.Config, logger *zerolog.Logger) *
 	logger.Trace().Msg("loading system certificates")
 	_, err := x509.SystemCertPool()
 	if err != nil {
-		logger.Error().Msgf("failed to load system certificate pool: %w", err)
+		logger.Error().Err(err).Msg("failed to load system certificate pool")
 	}
 	logger.Trace().Msg("system certificates loaded")
 	client := &http.Client{}
