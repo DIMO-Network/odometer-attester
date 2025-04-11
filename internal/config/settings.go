@@ -13,7 +13,7 @@ type Settings struct {
 	TokenExchangeURL          string         `env:"TOKEN_EXCHANGE_URL"           yaml:"tokenExchangeUrl"`
 	VehicleNFTContractAddress common.Address `env:"VEHICLE_NFT_CONTRACT_ADDRESS" yaml:"vehicleNftContractAddress"`
 	DeveloperLicense          string         `env:"DEVELOPER_LICENSE"            yaml:"developerLicense"`
-
+	ChainID                   uint64         `env:"CHAIN_ID"                      yaml:"chainId"`
 	// Dex settings
 	DexURL     string `env:"DEX_URL"     yaml:"dexUrl"`
 	PrivateKey string `env:"PRIVATE_KEY" yaml:"privateKey"`

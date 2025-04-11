@@ -3,6 +3,7 @@ module github.com/DIMO-Network/odometer-attester
 go 1.24
 
 require (
+	github.com/DIMO-Network/cloudevent v0.0.4
 	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250410145855-c97ab886f69f
 	github.com/DIMO-Network/shared v0.12.10
 	github.com/ethereum/go-ethereum v1.15.7
@@ -14,6 +15,7 @@ require (
 	github.com/mdlayher/vsock v1.2.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/zerolog v1.34.0
+	github.com/segmentio/ksuid v1.0.4
 	golang.org/x/sync v0.12.0
 )
 
@@ -30,6 +32,10 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mdlayher/socket v0.4.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.59.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect

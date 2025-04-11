@@ -10,6 +10,8 @@ import (
 	"net/url"
 
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
+	"github.com/DIMO-Network/odometer-attester/internal/config"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const odometerQuery = `
@@ -26,14 +28,17 @@ query lastSeen($tokenId: Int!) {
 
 // Client interacts with the telemetry GraphQL API.
 type Client struct {
-	httpClient  *http.Client
-	apiQueryURL string
-	tokenCache  *tokencache.Cache
+	httpClient             *http.Client
+	apiQueryURL            string
+	tokenCache             *tokencache.Cache
+	vehicleContractAddress common.Address
+	devLicense             string
+	chainID                uint64
 }
 
 // NewClient creates a new instance of Client with optional TLS certificate pool.
-func NewClient(apiBaseURL string, client *http.Client, tokenCache *tokencache.Cache) (*Client, error) {
-	path, err := url.JoinPath(apiBaseURL, "query")
+func NewClient(settings *config.Settings, client *http.Client, tokenCache *tokencache.Cache) (*Client, error) {
+	path, err := url.JoinPath(settings.TelemetryAPIURL, "query")
 	if err != nil {
 		return nil, fmt.Errorf("create telemetry URL: %w", err)
 	}
@@ -42,9 +47,12 @@ func NewClient(apiBaseURL string, client *http.Client, tokenCache *tokencache.Ca
 	}
 
 	return &Client{
-		apiQueryURL: path,
-		httpClient:  client,
-		tokenCache:  tokenCache,
+		apiQueryURL:            path,
+		httpClient:             client,
+		tokenCache:             tokenCache,
+		vehicleContractAddress: settings.VehicleNFTContractAddress,
+		devLicense:             settings.DeveloperLicense,
+		chainID:                settings.ChainID,
 	}, nil
 }
 
