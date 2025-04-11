@@ -4,6 +4,8 @@ github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250410145855-c97ab886f69f h1:L
 github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250410145855-c97ab886f69f/go.mod h1:wtbF7WfUQhbk4AD2d3So8ol3FvdVO6CRlaVgYqSK50I=
 github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411125937-bab215327455 h1:0cdZkZDEzJijuNjy+1yrjXiNXQ9dsArQbLrmwxSFdbY=
 github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411125937-bab215327455/go.mod h1:wtbF7WfUQhbk4AD2d3So8ol3FvdVO6CRlaVgYqSK50I=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411165030-262de82e468a h1:fLoWlAwfdZI24GNlHqt8P9LnL6D0q2QUwdDpdk5R9rY=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411165030-262de82e468a/go.mod h1:wtbF7WfUQhbk4AD2d3So8ol3FvdVO6CRlaVgYqSK50I=
 github.com/DIMO-Network/shared v0.12.10 h1:taiAs09lyfV34SpGjesNjd4ljbMcCKrm18rhG+SizaM=
 github.com/DIMO-Network/shared v0.12.10/go.mod h1:lDHUKwwT2LW6Zvd42Nb33dXklRNTmfyOlbUNx2dQfGY=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=

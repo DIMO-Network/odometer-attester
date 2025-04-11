@@ -1,6 +1,7 @@
 package tmp
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DIMO-Network/enclave-bridge/pkg/enclave"
 	"github.com/mdlayher/vsock"
 	"github.com/rs/zerolog"
 )
@@ -105,6 +107,13 @@ func dialVsock(port uint32, network, addr string, logger *zerolog.Logger) (net.C
 	_, err = vsockConn.Write([]byte(addr + "\n"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to write to vsock: %w", err)
+	}
+	resp, err := bufio.NewReader(vsockConn).ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from vsock: %w", err)
+	}
+	if resp != enclave.ACK {
+		return nil, fmt.Errorf("invalid response from vsock: %d", resp)
 	}
 	return vsockConn, nil
 }
