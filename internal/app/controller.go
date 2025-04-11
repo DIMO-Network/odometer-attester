@@ -84,7 +84,7 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 		c.logger.Error().Err(err).Msg("Failed to get odometer")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get odometer")
 	}
-	attestation, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.Value)
+	attestation, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to create attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create attestation")
@@ -116,7 +116,7 @@ func (c *Controller) GetUnsafeKeys(ctx *fiber.Ctx) error {
 	return ctx.JSON(c.nsmResult)
 }
 
-func (c *Controller) createAttestation(tokenID uint32, odometer uint64) (*cloudevent.CloudEvent[json.RawMessage], error) {
+func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloudevent.CloudEvent[json.RawMessage], error) {
 	vehicleDID := cloudevent.NFTDID{
 		ContractAddress: c.vehicleContractAddress,
 		ChainID:         c.chainID,
@@ -127,7 +127,7 @@ func (c *Controller) createAttestation(tokenID uint32, odometer uint64) (*cloude
 		Subject:    vehicleDID,
 		Producer:   crypto.PubkeyToAddress(*c.publicKey).Hex(),
 		Time:       time.Now().UTC(),
-		Value:      odometer,
+		Odometer:   odometer,
 		VehicleDID: vehicleDID,
 		PCRs:       c.nsmResult.Document.PCRs,
 	}
@@ -165,7 +165,7 @@ type odometerAttestation struct {
 	Subject    string          `json:"subject"`
 	Producer   string          `json:"producer"`
 	Time       time.Time       `json:"time"`
-	Value      uint64          `json:"value"`
+	Odometer   float64         `json:"odometer"`
 	VehicleDID string          `json:"vehicleDID"`
 	PCRs       map[uint][]byte `json:"pcrs"`
 }

@@ -69,7 +69,7 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, clientPo
 	}
 
 	// Create controller with all required clients
-	return NewController(identClient, telemetryClient, logger, &privateKey.PublicKey, attestResults)
+	return NewController(identClient, telemetryClient, logger, privateKey, attestResults)
 }
 
 // CreateEnclaveWebServer creates a new web server with the given logger and settings.
