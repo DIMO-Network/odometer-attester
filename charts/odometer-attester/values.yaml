@@ -45,7 +45,7 @@ app:
   image:
     repository: dimozone/odometer-attester-enclave
     pullPolicy: IfNotPresent
-    tag: 2cb551e
+    tag: 6c84a0f
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
