@@ -2,6 +2,8 @@ github.com/DIMO-Network/cloudevent v0.0.4 h1:uAACCZtZhdNYomz+enc1c9CZRDNRpau7jJQ
 github.com/DIMO-Network/cloudevent v0.0.4/go.mod h1:uY68qV/p18qtbMzLpBCci3QrJzhDPlDt+QcMrh5XY2s=
 github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250410145855-c97ab886f69f h1:LKxyQLv1x7qR42u/1lr1Pq2mrpYr+rnsD6a1GWo078w=
 github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250410145855-c97ab886f69f/go.mod h1:wtbF7WfUQhbk4AD2d3So8ol3FvdVO6CRlaVgYqSK50I=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411125937-bab215327455 h1:0cdZkZDEzJijuNjy+1yrjXiNXQ9dsArQbLrmwxSFdbY=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411125937-bab215327455/go.mod h1:wtbF7WfUQhbk4AD2d3So8ol3FvdVO6CRlaVgYqSK50I=
 github.com/DIMO-Network/shared v0.12.10 h1:taiAs09lyfV34SpGjesNjd4ljbMcCKrm18rhG+SizaM=
 github.com/DIMO-Network/shared v0.12.10/go.mod h1:lDHUKwwT2LW6Zvd42Nb33dXklRNTmfyOlbUNx2dQfGY=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=

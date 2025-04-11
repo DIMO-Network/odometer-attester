@@ -28,7 +28,7 @@ import (
 // setupController creates and configures all the clients needed for the controller
 func setupController(logger *zerolog.Logger, settings *config.Settings, clientPort uint32, privateKey *ecdsa.PrivateKey, attestResults *nitrite.Result) (*Controller, error) {
 	// Setup HTTP client
-	httpClient := client.NewHTTPClient(clientPort)
+	httpClient := client.NewHTTPClient(clientPort, nil)
 
 	// Setup identity client
 	identClient, err := identity.NewClient(settings.IdentityAPIURL, httpClient)
