@@ -69,7 +69,7 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
 spec:
   {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ingress.className }}
+  ingressClassName: nginx-direct
   {{- end }}
   {{- if .Values.ingress.tls }}
   tls:

@@ -36,18 +36,18 @@ bridge:
       containerPort: 8888
       protocol: TCP
       identities:
-        - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
+        - 'mon-kube-prometheus-stack-prometheus.mon.serviceaccount.identity.linkerd.cluster.local'
     - name: https-server
       containerPort: 8080
       protocol: TCP
       identities:
-        - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
+        - 'dev.serviceaccount.identity.linkerd.cluster.local'
         - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
     - name: http-server
       containerPort: 8081
       protocol: TCP
       identities:
-        - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
+        - 'dev.serviceaccount.identity.linkerd.cluster.local'
         - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
   resources:
     limits:
