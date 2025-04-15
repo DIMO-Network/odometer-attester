@@ -22,12 +22,15 @@ import (
 
 const (
 	// heartInterval is the interval to check if the enclave is still alive.
-	heartInterval             = 10 * time.Second
-	appName                   = "odometer-attester"
-	serverTunnelPort          = uint32(5001)
-	challengeServerTunnelPort = uint32(5002)
-	clientTunnelPort          = uint32(5001)
-	loggerPort                = uint32(5002)
+	heartInterval = 10 * time.Second
+	appName       = "odometer-attester"
+)
+
+const (
+	serverTunnelPort uint32 = iota + 5001
+	challengeServerTunnelPort
+	clientTunnelPort
+	loggerPort
 )
 
 func main() {
