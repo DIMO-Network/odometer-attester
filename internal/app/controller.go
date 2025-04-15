@@ -2,6 +2,8 @@ package app
 
 import (
 	"crypto/ecdsa"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/cloudevent"
+	"github.com/DIMO-Network/enclave-bridge/pkg/attest"
 	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
@@ -17,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/hf/nitrite"
+	"github.com/hf/nsm/request"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 )
@@ -35,6 +39,8 @@ type Controller struct {
 	chainID                uint64
 	devLicense             string
 	privateKey             *ecdsa.PrivateKey
+	lastCert               *tls.Certificate
+	getCert                func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 }
 
 func NewController(
@@ -43,7 +49,7 @@ func NewController(
 	identityClient *identity.Client,
 	telemetryClient *telemetry.Client,
 	privateKey *ecdsa.PrivateKey,
-	nsmResult *nitrite.Result,
+	getCert func(*tls.ClientHelloInfo) (*tls.Certificate, error),
 ) (*Controller, error) {
 	if privateKey == nil {
 		return nil, errors.New("private key is nil")
@@ -55,7 +61,6 @@ func NewController(
 		privateKey:      privateKey,
 		publicKey:       &privateKey.PublicKey,
 		devLicense:      settings.DeveloperLicense,
-		nsmResult:       nsmResult,
 	}, nil
 }
 
@@ -98,6 +103,32 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 
 // GetNSMAttestations returns the NSM attestation.
 func (c *Controller) GetNSMAttestations(ctx *fiber.Ctx) error {
+	cert, err := c.getCert(nil)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get certificate")
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get certificate")
+	}
+
+	// If the certificate is the same and the not after date is in the future, return the cached result
+	if c.lastCert == cert && c.nsmResult.Certificates[0].NotAfter.After(time.Now()) {
+		return ctx.JSON(c.nsmResult)
+	}
+
+	c.lastCert = cert
+	certBytes, err := x509.MarshalPKIXPublicKey(cert.Certificate[0])
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to marshal certificate")
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to marshal certificate")
+	}
+	req := &request.Attestation{
+		PublicKey: crypto.FromECDSAPub(c.publicKey),
+		UserData:  certBytes,
+	}
+	c.nsmResult, err = attest.GetNSMAttestation(req)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get NSM attestation")
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get NSM attestation")
+	}
 	return ctx.JSON(c.nsmResult)
 }
 

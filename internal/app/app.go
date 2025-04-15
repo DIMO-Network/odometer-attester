@@ -1,14 +1,18 @@
 package app
 
 import (
+	"context"
 	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/DIMO-Network/enclave-bridge/pkg/attest"
 	"github.com/DIMO-Network/enclave-bridge/pkg/client"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
 	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
@@ -16,99 +20,54 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
+	"github.com/DIMO-Network/odometer-attester/internal/tmp/acme"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/hf/nitrite"
-	"github.com/hf/nsm/request"
 	"github.com/rs/zerolog"
 )
 
-// setupController creates and configures all the clients needed for the controller.
-func setupController(logger *zerolog.Logger, settings *config.Settings, clientPort uint32, privateKey *ecdsa.PrivateKey, attestResults *nitrite.Result) (*Controller, error) {
-	// Setup HTTP client
-	httpClient := client.NewHTTPClient(clientPort, nil)
-
-	// Setup identity client
-	identClient, err := identity.NewClient(settings.IdentityAPIURL, httpClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create identity client: %w", err)
-	}
-
-	// Setup dex client for developer license tokens
-	dexClient, err := dex.NewClient(settings, privateKey, httpClient, logger.With().Str("component", "dex").Logger())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create dex client: %w", err)
-	}
-
-	// Initialize token cache with both token getters
-	devLicenseTokenCache := tokencache.New(
-		time.Hour,    // Default expiration
-		time.Hour*24, // Cleanup interval
-		dexClient,
-	)
-
-	// Setup token exchange client with token cache
-	tokenExchangeClient, err := tokenexchange.NewClient(settings, devLicenseTokenCache, httpClient, logger.With().Str("component", "tokenexchange").Logger())
-	if err != nil {
-		return nil, err
-	}
-
-	// Recreate the tokenCache with both token getters properly set
-	vehicleTokenCache := tokencache.New(
-		time.Hour,    // Default expiration
-		time.Hour*24, // Cleanup interval
-		tokenExchangeClient,
-	)
-
-	// Setup telemetry client with token cache for vehicle tokens
-	telemetryClient, err := telemetry.NewClient(settings.TelemetryAPIURL, httpClient, vehicleTokenCache)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create controller with all required clients
-	return NewController(settings, logger, identClient, telemetryClient, privateKey, attestResults)
-}
-
 // CreateEnclaveWebServer creates a new web server with the given logger and settings.
-func CreateEnclaveWebServer(logger *zerolog.Logger, port uint32, settings *config.Settings) (*fiber.App, error) {
+func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort uint32, settings *config.Settings) (*fiber.App, *tls.Config, error) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
 		},
 		DisableStartupMessage: true,
 	})
-	pk := settings.DevFakeKey
-	var privateKey *ecdsa.PrivateKey
-	var attestResults *nitrite.Result
-	var err error
-	if pk == "" {
-		privateKey, attestResults, err = attest.GetNSMAttestationAndKey()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get NSM attestation and key: %w", err)
-		}
-	} else {
-		logger.Warn().Msgf("Using unsafe injected key: %s", pk)
-		privateKey, err = crypto.HexToECDSA(pk)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert hex to ecdsa private key: %w", err)
-		}
-		req := &request.Attestation{
-			PublicKey: crypto.FromECDSAPub(&privateKey.PublicKey),
-		}
+	// Setup HTTP client
+	httpClient := client.NewHTTPClient(clientPort, nil)
 
-		attestResults, err = attest.GetNSMAttestation(req)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get NSM attestation: %w", err)
-		}
+	walletPrivateKey, certPrivateKey, err := GetKeys(settings, logger)
+
+	certLogger := logger.With().Str("component", "acme").Logger()
+	// Configure our ACME cert manager and get a certificate using ACME!
+	acm, err := acme.NewCertManager(acme.CertManagerConfig{
+		Domains:         []string{settings.HostName},
+		Email:           settings.Email,
+		Key:             certPrivateKey,
+		CADirURL:        settings.CADirURL,
+		VsockListenPort: challengePort,
+		HTTPClient:      httpClient,
+		Logger:          &certLogger,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create ACME cert manager: %w", err)
 	}
 
+	// TODO(kevin): this needs to be moved
+	go func() {
+		err = acm.Start(context.TODO(), logger)
+		if err != nil {
+			logger.Err(err).Msg("failed to start ACME cert manager")
+		}
+	}()
+
 	// Setup the controller with all its dependencies
-	ctrl, err := setupController(logger, settings, port, privateKey, attestResults)
+	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, acm.GetCertificate)
 	if err != nil {
-		return nil, err
+		return nil, nil, fmt.Errorf("failed to setup controller: %w", err)
 	}
 
 	app.Use(recover.New(recover.Config{
@@ -126,18 +85,25 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, port uint32, settings *confi
 		}
 		return ctx.JSON(map[string]string{"data": "Hello From The Enclave! Did you say: " + msg})
 	})
+	app.Get("/.well-known/nsm-attestation", ctrl.GetNSMAttestations)
 	app.Get("/vehicle/:tokenId", ctrl.GetVehicleInfo)
 	app.Get("/vehicle/:tokenId/odometer", ctrl.GetOdometer)
-	app.Get("/nsm-attestations", ctrl.GetNSMAttestations)
 	app.Get("/keys", ctrl.GetKeys)
 	app.Get("/keys/unsafe", func(ctx *fiber.Ctx) error {
 		return ctx.JSON(map[string]string{
-			"pk":      hex.EncodeToString(crypto.FromECDSA(privateKey)),
-			"pub":     hex.EncodeToString(crypto.FromECDSAPub(&privateKey.PublicKey)),
-			"pubAddr": crypto.PubkeyToAddress(privateKey.PublicKey).Hex(),
+			"certPublicKey": hex.EncodeToString(crypto.FromECDSAPub(&certPrivateKey.PublicKey)),
+			"pk":            hex.EncodeToString(crypto.FromECDSA(walletPrivateKey)),
+			"pub":           hex.EncodeToString(crypto.FromECDSAPub(&walletPrivateKey.PublicKey)),
+			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
 		})
 	})
-	return app, nil
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		// Dynamically load certificate from ACMECertManager with every
+		// connection, so renewals work.
+		GetCertificate: acm.GetCertificate,
+	}
+	return app, tlsConfig, nil
 }
 
 // HealthCheck godoc
@@ -181,4 +147,70 @@ func ErrorHandler(ctx *fiber.Ctx, err error, logger *zerolog.Logger) error {
 type codeResp struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
+}
+
+func GetKeys(settings *config.Settings, logger *zerolog.Logger) (*ecdsa.PrivateKey, *ecdsa.PrivateKey, error) {
+	certPrivateKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate cert private key: %w", err)
+	}
+	var walletPrivateKey *ecdsa.PrivateKey
+	walletPk := settings.DevFakeKey
+	if walletPk == "" {
+		walletPrivateKey, err = crypto.GenerateKey()
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		logger.Warn().Msgf("Using unsafe injected key: %s", walletPk)
+		walletPrivateKey, err = crypto.HexToECDSA(walletPk)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to convert hex to ecdsa private key: %w", err)
+		}
+	}
+	return walletPrivateKey, certPrivateKey, nil
+}
+
+// setupController creates and configures all the clients needed for the controller.
+func setupController(logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, privateKey *ecdsa.PrivateKey, getCert func(*tls.ClientHelloInfo) (*tls.Certificate, error)) (*Controller, error) {
+	// Setup identity client
+	identClient, err := identity.NewClient(settings.IdentityAPIURL, httpClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create identity client: %w", err)
+	}
+
+	// Setup dex client for developer license tokens
+	dexClient, err := dex.NewClient(settings, privateKey, httpClient, logger.With().Str("component", "dex").Logger())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dex client: %w", err)
+	}
+
+	// Initialize token cache with both token getters
+	devLicenseTokenCache := tokencache.New(
+		time.Hour,    // Default expiration
+		time.Hour*24, // Cleanup interval
+		dexClient,
+	)
+
+	// Setup token exchange client with token cache
+	tokenExchangeClient, err := tokenexchange.NewClient(settings, devLicenseTokenCache, httpClient, logger.With().Str("component", "tokenexchange").Logger())
+	if err != nil {
+		return nil, err
+	}
+
+	// Recreate the tokenCache with both token getters properly set
+	vehicleTokenCache := tokencache.New(
+		time.Hour,    // Default expiration
+		time.Hour*24, // Cleanup interval
+		tokenExchangeClient,
+	)
+
+	// Setup telemetry client with token cache for vehicle tokens
+	telemetryClient, err := telemetry.NewClient(settings.TelemetryAPIURL, httpClient, vehicleTokenCache)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create controller with all required clients
+	return NewController(settings, logger, identClient, telemetryClient, privateKey, getCert)
 }

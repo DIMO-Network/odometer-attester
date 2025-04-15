@@ -1,0 +1,33 @@
+{{- range .Values.bridge.ports }}
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  namespace: {{ $.Release.Namespace }}
+  name: {{ include "odometer-attester.fullname" $ }}-{{ .name }}
+  labels:
+    {{- include "odometer-attester.labels" $ | nindent 4 }}
+spec:
+  port: {{ .name }}
+  podSelector:
+    matchLabels:
+      {{- include "odometer-attester.selectorLabels" $ | nindent 6 }}
+  proxyProtocol: HTTP/1
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  namespace: {{ $.Release.Namespace }}
+  name: {{ include "odometer-attester.fullname" $ }}-{{ .name }}-access
+  labels:
+    {{- include "odometer-attester.labels" $ | nindent 4 }}
+spec:
+  server:
+    name: {{ include "odometer-attester.fullname" $ }}-{{ .name }}
+  client:
+    meshTLS:
+      identities:
+      {{- range .identities }}
+      - {{ . | quote }}
+      {{- end }}
+---
+{{- end }}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -21,11 +22,12 @@ import (
 
 const (
 	// heartInterval is the interval to check if the enclave is still alive.
-	heartInterval    = 10 * time.Second
-	appName          = "odometer-attester"
-	serverTunnelPort = uint32(5001)
-	clientTunnelPort = uint32(5001)
-	loggerPort       = uint32(5002)
+	heartInterval             = 10 * time.Second
+	appName                   = "odometer-attester"
+	serverTunnelPort          = uint32(5001)
+	challengeServerTunnelPort = uint32(5002)
+	clientTunnelPort          = uint32(5001)
+	loggerPort                = uint32(5002)
 )
 
 func main() {
@@ -70,6 +72,11 @@ func main() {
 				EnclaveListenPort: serverTunnelPort,
 				BridgeTCPPort:     uint32(settings.Port),
 			},
+			{
+				EnclaveCID:        cid,
+				EnclaveListenPort: challengeServerTunnelPort,
+				BridgeTCPPort:     uint32(settings.ChallengePort),
+			},
 		},
 		Clients: []bridgecfg.ClientSettings{
 			{
@@ -107,13 +114,13 @@ func main() {
 	logger.Info().Msgf("Listening on %s", listener.Addr())
 
 	// Create the enclave server using the new listener and logger
-	enclaveApp, err := app.CreateEnclaveWebServer(&logger, clientTunnelPort, &settings)
+	enclaveApp, tlsConfig, err := app.CreateEnclaveWebServer(&logger, clientTunnelPort, challengeServerTunnelPort, &settings)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Couldn't create enclave web server.")
 	}
 
 	group, gCtx := errgroup.WithContext(ctx)
-	RunFiberWithListener(gCtx, enclaveApp, listener, group)
+	RunFiberWithListener(gCtx, enclaveApp, listener, tlsConfig, group)
 
 	err = group.Wait()
 	if err != nil {
@@ -122,9 +129,10 @@ func main() {
 }
 
 // RunFiberWithListener runs a fiber server with a listener and returns a context that can be used to stop the server.
-func RunFiberWithListener(ctx context.Context, fiberApp *fiber.App, listener net.Listener, group *errgroup.Group) {
+func RunFiberWithListener(ctx context.Context, fiberApp *fiber.App, listener net.Listener, tlsConfig *tls.Config, group *errgroup.Group) {
 	group.Go(func() error {
-		if err := fiberApp.Listener(listener); err != nil {
+		ln := tls.NewListener(listener, tlsConfig)
+		if err := fiberApp.Listener(ln); err != nil {
 			return fmt.Errorf("failed to start server: %w", err)
 		}
 		return nil

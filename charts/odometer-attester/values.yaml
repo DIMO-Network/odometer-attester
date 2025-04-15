@@ -17,6 +17,7 @@ bridge:
   env:
     LOG_LEVEL: TRACE
     PORT: '8080'
+    CHALLENGE_PORT: '8081'
     MON_PORT: '8888'
     VSOCK_INIT_PORT: '5000'
     VEHICLE_NFT_CONTRACT_ADDRESS: '0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF'
@@ -27,13 +28,27 @@ bridge:
     TELEMETRY_API_URL: https://telemetry-api.dimo.zone
     TOKEN_EXCHANGE_URL: https://token-exchange-api.dimo.zone
     DEV_FAKE_KEY: 073564dcc1a9745fef22ac023b635604dc7c3dda2b84165b7eff5ccd68d48fe7
+    HOST_NAME: odometer-attester.dev.dimo.zone
+    CADIR_URL: https://acme-staging-v02.api.letsencrypt.org/directory
+    EMAIL: ""
   ports:
     - name: mon-http
       containerPort: 8888
       protocol: TCP
-    - name: http
+      identities:
+        - "*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local"
+    - name: https
       containerPort: 8080
       protocol: TCP
+      identities:
+        - "*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local"
+        - "ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local"
+    - name: http
+      containerPort: 8081
+      protocol: TCP
+      identities:
+        - "*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local"
+        - "ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local"
   resources:
     limits:
       cpu: 250m
@@ -76,15 +91,19 @@ service:
       targetPort: mon-http
       protocol: TCP
     http:
-      port: 8080
+      port: 80
       targetPort: http
+      protocol: TCP
+    https:
+      port: 443
+      targetPort: https
       protocol: TCP
 ingress:
   enabled: true
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
-    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'off'
     nginx.ingress.kubernetes.io/enable-cors: 'true'
     nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dimo.zone, https://admin.team.dimo.zone
     nginx.ingress.kubernetes.io/limit-rps: '50'

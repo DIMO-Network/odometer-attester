@@ -4,16 +4,17 @@ import "github.com/ethereum/go-ethereum/common"
 
 // Settings contains the application config.
 type Settings struct {
-	Environment string `env:"ENVIRONMENT" yaml:"environment"`
-	LogLevel    string `env:"LOG_LEVEL"   yaml:"logLevel"`
-	Port        int    `env:"PORT"        yaml:"port"`
-	MonPort     int    `env:"MON_PORT"    yaml:"monPort"`
+	Environment   string `env:"ENVIRONMENT"    yaml:"environment"`
+	LogLevel      string `env:"LOG_LEVEL"      yaml:"logLevel"`
+	Port          int    `env:"PORT"           yaml:"port"`
+	ChallengePort int    `env:"CHALLENGE_PORT" yaml:"challengePort"`
+	MonPort       int    `env:"MON_PORT"       yaml:"monPort"`
 
 	// Token Exchange settings
 	TokenExchangeURL          string         `env:"TOKEN_EXCHANGE_URL"           yaml:"tokenExchangeUrl"`
 	VehicleNFTContractAddress common.Address `env:"VEHICLE_NFT_CONTRACT_ADDRESS" yaml:"vehicleNftContractAddress"`
 	DeveloperLicense          string         `env:"DEVELOPER_LICENSE"            yaml:"developerLicense"`
-	ChainID                   uint64         `env:"CHAIN_ID"                      yaml:"chainId"`
+	ChainID                   uint64         `env:"CHAIN_ID"                     yaml:"chainId"`
 	// Dex settings
 	DexURL     string `env:"DEX_URL"     yaml:"dexUrl"`
 	PrivateKey string `env:"PRIVATE_KEY" yaml:"privateKey"`
@@ -24,4 +25,9 @@ type Settings struct {
 
 	// Dev fake key
 	DevFakeKey string `env:"DEV_FAKE_KEY" yaml:"devFakeKey"`
+
+	// CA settings
+	CADirURL string `env:"CA_DIR_URL" yaml:"caDirUrl"`
+	Email    string `env:"EMAIL"      yaml:"email"`
+	HostName string `env:"HOST_NAME"  yaml:"hostName"`
 }
