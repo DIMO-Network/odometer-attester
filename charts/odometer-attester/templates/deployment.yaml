@@ -61,11 +61,11 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: mon-http
+              port: mon-http-server
           readinessProbe:
             httpGet:
               path: /
-              port: mon-http
+              port: mon-http-server
           resources:
             {{- toYaml .Values.bridge.resources | nindent 12 }}
         - name: odometer-attester

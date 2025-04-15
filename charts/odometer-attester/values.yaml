@@ -32,18 +32,18 @@ bridge:
     CA_DIR_URL: https://acme-staging-v02.api.letsencrypt.org/directory
     EMAIL: ''
   ports:
-    - name: mon-http
+    - name: mon-http-server
       containerPort: 8888
       protocol: TCP
       identities:
         - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
-    - name: https
+    - name: https-server
       containerPort: 8080
       protocol: TCP
       identities:
         - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
         - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
-    - name: http
+    - name: http-server
       containerPort: 8081
       protocol: TCP
       identities:
@@ -86,17 +86,17 @@ app:
 service:
   type: ClusterIP
   ports:
-    mon-http:
+    mon-http-server:
       port: 8888
-      targetPort: mon-http
+      targetPort: mon-http-server
       protocol: TCP
-    http:
+    http-server:
       port: 80
-      targetPort: http
+      targetPort: http-server
       protocol: TCP
-    https:
+    https-server:
       port: 443
-      targetPort: https
+      targetPort: https-server
       protocol: TCP
 ingress:
   enabled: true
@@ -134,7 +134,7 @@ serviceAccount:
 serviceMonitor:
   enabled: true
   path: /metrics
-  port: mon-http
+  port: mon-http-server
   interval: 30s
 secrets:
   enabled: false
