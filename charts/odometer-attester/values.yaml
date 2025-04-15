@@ -30,25 +30,25 @@ bridge:
     DEV_FAKE_KEY: 073564dcc1a9745fef22ac023b635604dc7c3dda2b84165b7eff5ccd68d48fe7
     HOST_NAME: odometer-attester.dev.dimo.zone
     CADIR_URL: https://acme-staging-v02.api.letsencrypt.org/directory
-    EMAIL: ""
+    EMAIL: ''
   ports:
     - name: mon-http
       containerPort: 8888
       protocol: TCP
       identities:
-        - "*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local"
+        - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
     - name: https
       containerPort: 8080
       protocol: TCP
       identities:
-        - "*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local"
-        - "ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local"
+        - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
+        - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
     - name: http
       containerPort: 8081
       protocol: TCP
       identities:
-        - "*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local"
-        - "ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local"
+        - '*.{{ .Release.Namespace }}.serviceaccount.identity.linkerd.cluster.local'
+        - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
   resources:
     limits:
       cpu: 250m
@@ -60,7 +60,7 @@ app:
   image:
     repository: dimozone/odometer-attester-enclave
     pullPolicy: IfNotPresent
-    tag: 6c84a0f
+    tag: 6c5ca7e
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
