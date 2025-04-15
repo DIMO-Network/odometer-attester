@@ -36,18 +36,18 @@ bridge:
       containerPort: 8888
       protocol: TCP
       identities:
-        - 'mon-kube-prometheus-stack-prometheus.mon.serviceaccount.identity.linkerd.cluster.local'
+        - mon-kube-prometheus-stack-prometheus.mon.serviceaccount.identity.linkerd.cluster.local
     - name: https-server
       containerPort: 8080
       protocol: TCP
       identities:
-        - 'dev.serviceaccount.identity.linkerd.cluster.local'
+        - dev.serviceaccount.identity.linkerd.cluster.local
         - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
     - name: http-server
       containerPort: 8081
       protocol: TCP
       identities:
-        - 'dev.serviceaccount.identity.linkerd.cluster.local'
+        - dev.serviceaccount.identity.linkerd.cluster.local
         - ingress-ingress-nginx.ingress.serviceaccount.identity.linkerd.cluster.local
   resources:
     limits:
@@ -60,7 +60,7 @@ app:
   image:
     repository: dimozone/odometer-attester-enclave
     pullPolicy: IfNotPresent
-    tag: 5ebeec5
+    tag: ecd512f
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
