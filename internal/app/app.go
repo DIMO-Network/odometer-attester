@@ -40,6 +40,9 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 	httpClient := client.NewHTTPClient(clientPort, nil)
 
 	walletPrivateKey, certPrivateKey, err := GetKeys(settings, logger)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get keys: %w", err)
+	}
 
 	certLogger := logger.With().Str("component", "acme").Logger()
 	// Configure our ACME cert manager and get a certificate using ACME!
@@ -159,7 +162,7 @@ func GetKeys(settings *config.Settings, logger *zerolog.Logger) (*ecdsa.PrivateK
 	if walletPk == "" {
 		walletPrivateKey, err = crypto.GenerateKey()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to generate wallet private key: %w", err)
 		}
 	} else {
 		logger.Warn().Msgf("Using unsafe injected key: %s", walletPk)

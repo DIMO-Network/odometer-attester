@@ -1,7 +1,6 @@
 package acme
 
 import (
-	"os"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
@@ -89,37 +88,4 @@ func SetupFiberHandler(app *fiber.App, provider *HTTP01Provider) {
 		c.Set("Content-Type", "text/plain")
 		return c.SendString(keyAuth)
 	})
-}
-
-// Usage example with lego
-func main() {
-	app := fiber.New()
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-
-	// Setup your regular routes
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
-	})
-
-	// Create a new HTTP-01 provider
-	provider := NewHTTP01Provider(&logger)
-
-	// Setup the Fiber handler
-	SetupFiberHandler(app, provider)
-
-	// Start your Fiber app in a goroutine
-	go func() {
-		if err := app.Listen(":80"); err != nil {
-			// Handle error
-		}
-	}()
-
-	// Configure lego client to use your custom provider
-	// This is just a placeholder - you'll need to complete the lego client setup
-	// config := lego.NewConfig(...)
-	// client, _ := lego.NewClient(config)
-	// client.Challenge.SetHTTP01Provider(provider)
-
-	// Rest of your certificate request logic
-	// ...
 }

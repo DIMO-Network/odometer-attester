@@ -23,19 +23,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const (
-	// acmeDirectoryURL The ACME directory URL for your ACME server
-	acmeDirectoryURL = "https://example.org/acme/acme/directory"
-
-	// tickFrequency how frequently we should check whether our cert needs renewal
-	tickFrequency = 15 * time.Second
-)
+// tickFrequency how frequently we should check whether our cert needs renewal.
+const tickFrequency = 15 * time.Second
 
 // LegoUser implements registration.User, required by lego.
 type LegoUser struct {
-	email        string
 	key          crypto.PrivateKey
 	registration *registration.Resource
+	email        string
 }
 
 // GetEmail returns the email address of the user.
@@ -99,7 +94,7 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 		key:   acmeConfig.Key,
 	}
 
-	keyType, ok := SupportsCurve(acmeConfig.Key.PublicKey.Curve)
+	keyType, ok := SupportsCurve(acmeConfig.Key.Curve)
 	if !ok {
 		return nil, fmt.Errorf("unsupported curve: %s", acmeConfig.Key.Curve)
 	}
@@ -275,7 +270,7 @@ func (c *CertManager) runRenewal(ctx context.Context, logger *zerolog.Logger) {
 				} else {
 					leaf := c.GetLeaf()
 					logger.Info().Msgf("Renewed certificate: %s [%s - %s]", leaf.Subject, leaf.NotBefore, leaf.NotAfter)
-					logger.Info().Msgf("Next renewal at %s (%s)", c.NextRenewal(), c.NextRenewal().Sub(time.Now()))
+					logger.Info().Msgf("Next renewal at %s (%s)", c.NextRenewal(), time.Until(c.NextRenewal()))
 				}
 			}
 		}
