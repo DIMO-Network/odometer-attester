@@ -4,11 +4,10 @@ import "github.com/ethereum/go-ethereum/common"
 
 // Settings contains the application config.
 type Settings struct {
-	Environment   string `env:"ENVIRONMENT"    yaml:"environment"`
-	LogLevel      string `env:"LOG_LEVEL"      yaml:"logLevel"`
-	Port          int    `env:"PORT"           yaml:"port"`
-	ChallengePort int    `env:"CHALLENGE_PORT" yaml:"challengePort"`
-	MonPort       int    `env:"MON_PORT"       yaml:"monPort"`
+	Environment string `env:"ENVIRONMENT"    yaml:"environment"`
+	LogLevel    string `env:"LOG_LEVEL"      yaml:"logLevel"`
+	Port        int    `env:"PORT"           yaml:"port"`
+	MonPort     int    `env:"MON_PORT"       yaml:"monPort"`
 
 	// Token Exchange settings
 	TokenExchangeURL          string         `env:"TOKEN_EXCHANGE_URL"           yaml:"tokenExchangeUrl"`

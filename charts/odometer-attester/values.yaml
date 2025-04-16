@@ -36,7 +36,7 @@ bridge:
       protocol: TCP
       identities:
         - mon-kube-prometheus-stack-prometheus.mon.serviceaccount.identity.linkerd.cluster.local
-    - name: https-server
+    - name: httpsServer
       containerPort: 8080
       protocol: TCP
       identities:
@@ -83,9 +83,9 @@ service:
       port: 8888
       targetPort: mon-http-server
       protocol: TCP
-    https-server:
+    httpsServer:
       port: 443
-      targetPort: https-server
+      targetPort: httpsServer
       protocol: TCP
 ingress:
   enabled: true
