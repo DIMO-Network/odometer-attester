@@ -13,6 +13,7 @@ type TLSALPN01Provider struct {
 	challenges *tls.Certificate
 	mu         sync.RWMutex
 	logger     *zerolog.Logger
+	tlsConfig  *tls.Config
 }
 
 // NewTLSALPN01Provider creates a new TLSALPN01 provider.
@@ -37,6 +38,7 @@ func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
 	p.mu.Lock()
 	p.challenges = cert
 	p.mu.Unlock()
+	p.tlsConfig.NextProtos = []string{"acme-tls/1"}
 
 	p.logger.Debug().
 		Str("domain", domain).
@@ -52,7 +54,7 @@ func (p *TLSALPN01Provider) CleanUp(domain, token, keyAuth string) error {
 	p.mu.Lock()
 	p.challenges = nil
 	p.mu.Unlock()
-
+	p.tlsConfig.NextProtos = []string{}
 	p.logger.Debug().
 		Str("domain", domain).
 		Str("token", token).

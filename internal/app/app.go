@@ -99,14 +99,8 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
 		})
 	})
-	tlsConfig := &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		// Dynamically load certificate from ACMECertManager with every
-		// connection, so renewals work.
-		GetCertificate: acm.GetCertificate,
-		NextProtos:     []string{"acme-tls/1"},
-	}
-	return app, tlsConfig, nil
+
+	return app, acm.TLSConfig(), nil
 }
 
 // HealthCheck godoc

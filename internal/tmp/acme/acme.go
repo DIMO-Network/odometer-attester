@@ -72,6 +72,7 @@ type CertManager struct {
 	leaf        *x509.Certificate
 	domains     []string
 	provider    *TLSALPN01Provider
+	tlsConfig   *tls.Config
 	sync.RWMutex
 }
 
@@ -129,11 +130,17 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 	}
 	user.registration = reg
 
-	return &CertManager{
+	acm := &CertManager{
 		acmeClient: client,
 		domains:    acmeConfig.Domains,
 		provider:   provider,
-	}, nil
+		tlsConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
+	acm.tlsConfig.GetCertificate = acm.GetCertificate
+
+	return acm, nil
 }
 
 // Start obtains a certificate and starts a renewal ticker.
@@ -313,4 +320,8 @@ func ChallengeCert(domain, keyAuth string) (*tls.Certificate, error) {
 		Certificate: [][]byte{derBytes},
 		PrivateKey:  key,
 	}, nil
+}
+
+func (c *CertManager) TLSConfig() *tls.Config {
+	return c.tlsConfig
 }
