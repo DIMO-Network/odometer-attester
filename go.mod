@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/DIMO-Network/cloudevent v0.0.4
-	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250411165030-262de82e468a
+	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250416024653-0062ab2e6147
 	github.com/DIMO-Network/shared v0.12.10
 	github.com/ethereum/go-ethereum v1.15.7
 	github.com/fxamacker/cbor/v2 v2.8.0

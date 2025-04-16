@@ -10,9 +10,9 @@ import (
 
 // TLSALPN01Provider is a simple store for TLS-ALPN-01 challenges.
 type TLSALPN01Provider struct {
-	challenges map[string]*tls.Certificate
-	mu         sync.RWMutex
-	logger     *zerolog.Logger
+	challenge *tls.Certificate
+	mu        sync.RWMutex
+	logger    *zerolog.Logger
 }
 
 // NewTLSALPN01Provider creates a new TLSALPN01 provider.
@@ -22,8 +22,7 @@ func NewTLSALPN01Provider(logger *zerolog.Logger) *TLSALPN01Provider {
 		logger = &l
 	}
 	return &TLSALPN01Provider{
-		logger:     logger,
-		challenges: make(map[string]*tls.Certificate),
+		logger: logger,
 	}
 }
 
@@ -36,7 +35,7 @@ func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
 		return err
 	}
 	p.mu.Lock()
-	p.challenges[token] = cert
+	p.challenge = cert
 	p.mu.Unlock()
 
 	p.logger.Debug().
@@ -51,7 +50,7 @@ func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
 // Removes the challenge once it's no longer needed.
 func (p *TLSALPN01Provider) CleanUp(domain, token, keyAuth string) error {
 	p.mu.Lock()
-	delete(p.challenges, token)
+	p.challenge = nil
 	p.mu.Unlock()
 	p.logger.Debug().
 		Str("domain", domain).
@@ -61,21 +60,18 @@ func (p *TLSALPN01Provider) CleanUp(domain, token, keyAuth string) error {
 	return nil
 }
 
-// GetChallenge retrieves a challenge by token.
-func (p *TLSALPN01Provider) GetChallenge(token string) (*tls.Certificate, bool) {
+// GetChallenge retrieves the current challenge.
+func (p *TLSALPN01Provider) GetChallenge() (*tls.Certificate, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	cert, ok := p.challenges[token]
-	if ok {
+	if p.challenge == nil {
 		p.logger.Debug().
-			Str("token", token).
-			Msg("Retrieved TLS-ALPN-01 challenge")
-	} else {
-		p.logger.Debug().
-			Str("token", token).
 			Msg("TLS-ALPN-01 challenge not found")
+		return nil, false
 	}
 
-	return cert, ok
+	p.logger.Debug().
+		Msg("Retrieved TLS-ALPN-01 challenge")
+	return p.challenge, true
 }

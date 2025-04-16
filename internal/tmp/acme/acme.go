@@ -181,7 +181,7 @@ func (c *CertManager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certifica
 			if proto == "acme-tls/1" {
 				// This is a TLS-ALPN-01 challenge request
 				// Get the challenge from the provider
-				cert, ok := c.provider.GetChallenge(hello.ServerName)
+				cert, ok := c.provider.GetChallenge()
 				if !ok {
 					return nil, fmt.Errorf("no challenge found for domain: %s", hello.ServerName)
 				}
