@@ -49,13 +49,13 @@ bridge:
     requests:
       cpu: 100m
       memory: 256Mi
-  linkerd:  
+  linkerd:
     enabled: false
 app:
   image:
     repository: dimozone/odometer-attester-enclave
     pullPolicy: IfNotPresent
-    tag: d6119ca
+    tag: '2961278'
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
