@@ -10,26 +10,25 @@ import (
 
 // TLSALPN01Provider is a simple store for TLS-ALPN-01 challenges.
 type TLSALPN01Provider struct {
-	challenges *tls.Certificate
+	challenges map[string]*tls.Certificate
 	mu         sync.RWMutex
 	logger     *zerolog.Logger
-	tlsConfig  *tls.Config
 }
 
 // NewTLSALPN01Provider creates a new TLSALPN01 provider.
-func NewTLSALPN01Provider(logger *zerolog.Logger, tlsConfig *tls.Config) *TLSALPN01Provider {
+func NewTLSALPN01Provider(logger *zerolog.Logger) *TLSALPN01Provider {
 	if logger == nil {
 		l := zerolog.Nop()
 		logger = &l
 	}
 	return &TLSALPN01Provider{
-		logger:    logger,
-		tlsConfig: tlsConfig,
+		logger:     logger,
+		challenges: make(map[string]*tls.Certificate),
 	}
 }
 
-// Present implements challenge.Provider interface
-// Adds challenge data to be validated by the CA
+// Present implements challenge.Provider interface.
+// Adds challenge data to be validated by the CA.
 func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
 	// Generate the challenge certificate using the provided keyAuth and domain.
 	cert, err := tlsalpn01.ChallengeCert(domain, keyAuth)
@@ -37,9 +36,8 @@ func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
 		return err
 	}
 	p.mu.Lock()
-	p.challenges = cert
+	p.challenges[token] = cert
 	p.mu.Unlock()
-	p.tlsConfig.NextProtos = []string{"acme-tls/1"}
 
 	p.logger.Debug().
 		Str("domain", domain).
@@ -53,9 +51,8 @@ func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
 // Removes the challenge once it's no longer needed.
 func (p *TLSALPN01Provider) CleanUp(domain, token, keyAuth string) error {
 	p.mu.Lock()
-	p.challenges = nil
+	delete(p.challenges, token)
 	p.mu.Unlock()
-	p.tlsConfig.NextProtos = []string{}
 	p.logger.Debug().
 		Str("domain", domain).
 		Str("token", token).
@@ -69,7 +66,8 @@ func (p *TLSALPN01Provider) GetChallenge(token string) (*tls.Certificate, bool) 
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	if p.challenges != nil {
+	cert, ok := p.challenges[token]
+	if ok {
 		p.logger.Debug().
 			Str("token", token).
 			Msg("Retrieved TLS-ALPN-01 challenge")
@@ -79,5 +77,5 @@ func (p *TLSALPN01Provider) GetChallenge(token string) (*tls.Certificate, bool) 
 			Msg("TLS-ALPN-01 challenge not found")
 	}
 
-	return p.challenges, p.challenges != nil
+	return cert, ok
 }

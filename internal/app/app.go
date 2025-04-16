@@ -46,7 +46,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 
 	certLogger := logger.With().Str("component", "acme").Logger()
 	// Configure our ACME cert manager and get a certificate using ACME!
-	acm, err := acme.NewCertManager(acme.CertManagerConfig{
+	certService, err := acme.NewCertManager(acme.CertManagerConfig{
 		Domains:    []string{settings.HostName},
 		Email:      settings.Email,
 		Key:        certPrivateKey,
@@ -60,14 +60,14 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 
 	// TODO(kevin): this needs to be moved
 	go func() {
-		err = acm.Start(context.TODO(), logger)
+		err = certService.Start(context.TODO(), logger)
 		if err != nil {
 			logger.Err(err).Msg("failed to start ACME cert manager")
 		}
 	}()
 
 	// Setup the controller with all its dependencies
-	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, acm.GetCertificate)
+	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, certService.GetCertificate)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to setup controller: %w", err)
 	}
@@ -99,8 +99,12 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
 		})
 	})
-
-	return app, acm.TLSConfig(), nil
+	tlsConfig := &tls.Config{
+		MinVersion:     tls.VersionTLS12,
+		NextProtos:     []string{"h2", "http/1.1", "acme-tls/1"},
+		GetCertificate: certService.GetCertificate,
+	}
+	return app, tlsConfig, nil
 }
 
 // HealthCheck godoc

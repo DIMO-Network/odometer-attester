@@ -72,7 +72,6 @@ type CertManager struct {
 	leaf        *x509.Certificate
 	domains     []string
 	provider    *TLSALPN01Provider
-	tlsConfig   *tls.Config
 	sync.RWMutex
 }
 
@@ -116,10 +115,8 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 	if err != nil {
 		return nil, err
 	}
-	tlsConfig := &tls.Config{
-		MinVersion: tls.VersionTLS12,
-	}
-	provider := NewTLSALPN01Provider(acmeConfig.Logger, tlsConfig)
+
+	provider := NewTLSALPN01Provider(acmeConfig.Logger)
 	err = client.Challenge.SetTLSALPN01Provider(provider)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't set TLS-ALPN-01 provider: %w", err)
@@ -132,15 +129,11 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 	}
 	user.registration = reg
 
-	acm := &CertManager{
+	return &CertManager{
 		acmeClient: client,
 		domains:    acmeConfig.Domains,
 		provider:   provider,
-		tlsConfig:  tlsConfig,
-	}
-	acm.tlsConfig.GetCertificate = acm.GetCertificate
-
-	return acm, nil
+	}, nil
 }
 
 // Start obtains a certificate and starts a renewal ticker.
@@ -320,8 +313,4 @@ func ChallengeCert(domain, keyAuth string) (*tls.Certificate, error) {
 		Certificate: [][]byte{derBytes},
 		PrivateKey:  key,
 	}, nil
-}
-
-func (c *CertManager) TLSConfig() *tls.Config {
-	return c.tlsConfig
 }
