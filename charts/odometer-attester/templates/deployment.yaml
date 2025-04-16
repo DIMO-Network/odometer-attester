@@ -57,7 +57,11 @@ spec:
           # - secretRef:
           #     name: {{ include "odometer-attester.fullname" . }}-secret
           ports:
-{{ toYaml .Values.bridge.ports | indent 12 }}
+{{- range .Values.bridge.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol }}
+{{- end }}
           livenessProbe:
             httpGet:
               path: /

@@ -27,7 +27,7 @@ spec:
     meshTLS:
       identities:
       {{- range .identities }}
-      - {{ . | quote }}
+        - {{ . | quote }}
       {{- end }}
 ---
 {{- end }}
