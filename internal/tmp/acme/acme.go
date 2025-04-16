@@ -138,6 +138,12 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 
 // Start obtains a certificate and starts a renewal ticker.
 func (c *CertManager) Start(ctx context.Context, logger *zerolog.Logger) error {
+	logger.Info().Msg("Obtaining certificate")
+	err := c.ObtainCertificate()
+	if err != nil {
+		return err
+	}
+	logger.Info().Msg("Certificate obtained")
 	c.runRenewal(ctx, logger)
 	return nil
 }
