@@ -17,13 +17,14 @@ type TLSALPN01Provider struct {
 }
 
 // NewTLSALPN01Provider creates a new TLSALPN01 provider.
-func NewTLSALPN01Provider(logger *zerolog.Logger) *TLSALPN01Provider {
+func NewTLSALPN01Provider(logger *zerolog.Logger, tlsConfig *tls.Config) *TLSALPN01Provider {
 	if logger == nil {
 		l := zerolog.Nop()
 		logger = &l
 	}
 	return &TLSALPN01Provider{
-		logger: logger,
+		logger:    logger,
+		tlsConfig: tlsConfig,
 	}
 }
 

@@ -116,8 +116,10 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	provider := NewTLSALPN01Provider(acmeConfig.Logger)
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+	provider := NewTLSALPN01Provider(acmeConfig.Logger, tlsConfig)
 	err = client.Challenge.SetTLSALPN01Provider(provider)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't set TLS-ALPN-01 provider: %w", err)
@@ -134,9 +136,7 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 		acmeClient: client,
 		domains:    acmeConfig.Domains,
 		provider:   provider,
-		tlsConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
+		tlsConfig:  tlsConfig,
 	}
 	acm.tlsConfig.GetCertificate = acm.GetCertificate
 
