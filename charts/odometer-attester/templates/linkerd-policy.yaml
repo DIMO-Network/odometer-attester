@@ -1,3 +1,4 @@
+{{- if .Values.bridge.linkerd.enabled }}
 {{- range .Values.bridge.ports }}
 apiVersion: policy.linkerd.io/v1beta1
 kind: Server
@@ -30,4 +31,5 @@ spec:
         - {{ . | quote }}
       {{- end }}
 ---
+{{- end }}
 {{- end }}

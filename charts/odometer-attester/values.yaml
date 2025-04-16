@@ -31,12 +31,12 @@ bridge:
     CA_DIR_URL: https://acme-staging-v02.api.letsencrypt.org/directory
     EMAIL: ''
   ports:
-    - name: mon-http-server
+    - name: mon-http
       containerPort: 8888
       protocol: TCP
       identities:
         - mon-kube-prometheus-stack-prometheus.mon.serviceaccount.identity.linkerd.cluster.local
-    - name: https-server
+    - name: https
       containerPort: 8080
       protocol: TCP
       identities:
@@ -49,6 +49,8 @@ bridge:
     requests:
       cpu: 100m
       memory: 256Mi
+  linkerd:  
+    enabled: false
 app:
   image:
     repository: dimozone/odometer-attester-enclave
@@ -79,13 +81,13 @@ app:
 service:
   type: ClusterIP
   ports:
-    mon-http-server:
+    mon-http:
       port: 8888
-      targetPort: mon-http-server
+      targetPort: mon-http
       protocol: TCP
-    https-server:
+    https:
       port: 443
-      targetPort: https-server
+      targetPort: https
       protocol: TCP
 ingress:
   enabled: true
@@ -122,7 +124,7 @@ serviceAccount:
 serviceMonitor:
   enabled: true
   path: /metrics
-  port: mon-http-server
+  port: mon-http
   interval: 30s
 secrets:
   enabled: false
