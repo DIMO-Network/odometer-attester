@@ -176,16 +176,18 @@ func (c *CertManager) RenewCertificate() error {
 // GetCertificate locks around returning a tls.Certificate; use as tls.Config.GetCertificate.
 func (c *CertManager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	// Check if this is a TLS-ALPN-01 challenge request
-	for _, proto := range hello.SupportedProtos {
-		if proto == "acme-tls/1" {
-			// This is a TLS-ALPN-01 challenge request
-			// Get the challenge from the provider
-			cert, ok := c.provider.GetChallenge(hello.ServerName)
-			if !ok {
-				return nil, fmt.Errorf("no challenge found for domain: %s", hello.ServerName)
-			}
+	if hello != nil {
+		for _, proto := range hello.SupportedProtos {
+			if proto == "acme-tls/1" {
+				// This is a TLS-ALPN-01 challenge request
+				// Get the challenge from the provider
+				cert, ok := c.provider.GetChallenge(hello.ServerName)
+				if !ok {
+					return nil, fmt.Errorf("no challenge found for domain: %s", hello.ServerName)
+				}
 
-			return cert, nil
+				return cert, nil
+			}
 		}
 	}
 
