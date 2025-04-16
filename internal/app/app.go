@@ -101,7 +101,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 	})
 	tlsConfig := &tls.Config{
 		MinVersion:     tls.VersionTLS12,
-		NextProtos:     []string{"h2", "http/1.1", "acme-tls/1"},
+		NextProtos:     []string{"http/1.1", "acme-tls/1"},
 		GetCertificate: certService.GetCertificate,
 	}
 	return app, tlsConfig, nil
