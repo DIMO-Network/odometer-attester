@@ -5,9 +5,14 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"fmt"
+	"math/big"
 	"net/http"
 	"sync"
 	"time"
@@ -16,9 +21,6 @@ import (
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/registration"
-	"github.com/gofiber/fiber/v2"
-	"github.com/mdlayher/vsock"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rs/zerolog"
 )
@@ -69,20 +71,18 @@ type CertManager struct {
 	certificate *tls.Certificate
 	leaf        *x509.Certificate
 	domains     []string
-	vsockPort   uint32
-	app         *fiber.App
+	provider    *TLSALPN01Provider
 	sync.RWMutex
 }
 
 // CertManagerConfig contains configuration options for creating a new ACMECertManager.
 type CertManagerConfig struct {
-	Key             *ecdsa.PrivateKey
-	HTTPClient      *http.Client
-	Logger          *zerolog.Logger
-	Email           string
-	CADirURL        string
-	Domains         []string
-	VsockListenPort uint32
+	Key        *ecdsa.PrivateKey
+	HTTPClient *http.Client
+	Logger     *zerolog.Logger
+	Email      string
+	CADirURL   string
+	Domains    []string
 }
 
 // NewCertManager configures an ACME client, creates & registers a new ACME
@@ -110,19 +110,16 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 		},
 	}
 
-	// Create an ACME client and configure use of `http-01` challenge
+	// Create an ACME client and configure use of `tls-alpn-01` challenge
 	client, err := lego.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := NewHTTP01Provider(acmeConfig.Logger)
-
-	app := fiber.New()
-	SetupFiberHandler(app, provider)
-	err = client.Challenge.SetHTTP01Provider(provider)
+	provider := NewTLSALPN01Provider(acmeConfig.Logger)
+	err = client.Challenge.SetTLSALPN01Provider(provider)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't set HTTP-01 provider: %w", err)
+		return nil, fmt.Errorf("couldn't set TLS-ALPN-01 provider: %w", err)
 	}
 
 	// Register our ACME user
@@ -135,39 +132,13 @@ func NewCertManager(acmeConfig CertManagerConfig) (*CertManager, error) {
 	return &CertManager{
 		acmeClient: client,
 		domains:    acmeConfig.Domains,
-		vsockPort:  acmeConfig.VsockListenPort,
-		app:        app,
+		provider:   provider,
 	}, nil
 }
 
 // Start obtains a certificate and starts a renewal ticker.
 func (c *CertManager) Start(ctx context.Context, logger *zerolog.Logger) error {
-	// Create a listener for the enclave challenge server.
-	challengeListener, err := vsock.Listen(c.vsockPort, nil)
-	if err != nil {
-		return fmt.Errorf("couldn't listen on vsock port %d: %w", c.vsockPort, err)
-	}
-
-	group, groupCtx := errgroup.WithContext(ctx)
-	group.Go(func() error {
-		return c.app.Listener(challengeListener)
-	})
-	group.Go(func() error {
-		<-groupCtx.Done()
-		err := c.app.Shutdown()
-		if err != nil {
-			return fmt.Errorf("error shutting down ACME: %w", err)
-		}
-		return challengeListener.Close()
-	})
-	group.Go(func() error {
-		c.runRenewal(ctx, logger)
-		return nil
-	})
-	err = group.Wait()
-	if err != nil {
-		return fmt.Errorf("error starting ACME: %w", err)
-	}
+	c.runRenewal(ctx, logger)
 	return nil
 }
 
@@ -197,7 +168,22 @@ func (c *CertManager) RenewCertificate() error {
 }
 
 // GetCertificate locks around returning a tls.Certificate; use as tls.Config.GetCertificate.
-func (c *CertManager) GetCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+func (c *CertManager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	// Check if this is a TLS-ALPN-01 challenge request
+	for _, proto := range hello.SupportedProtos {
+		if proto == "acme-tls/1" {
+			// This is a TLS-ALPN-01 challenge request
+			// Get the challenge from the provider
+			cert, ok := c.provider.GetChallenge(hello.ServerName)
+			if !ok {
+				return nil, fmt.Errorf("no challenge found for domain: %s", hello.ServerName)
+			}
+
+			return cert, nil
+		}
+	}
+
+	// Normal certificate request
 	c.RLock()
 	defer c.RUnlock()
 	return c.certificate, nil
@@ -275,4 +261,48 @@ func (c *CertManager) runRenewal(ctx context.Context, logger *zerolog.Logger) {
 			}
 		}
 	}
+}
+
+// ChallengeCert generates a certificate for the TLS-ALPN-01 challenge.
+func ChallengeCert(domain, keyAuth string) (*tls.Certificate, error) {
+	// Generate a self-signed certificate with the acmeValidation-v1 extension
+	// containing the SHA-256 digest of the keyAuth
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate key: %w", err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: domain,
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(24 * time.Hour),
+		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{
+			x509.ExtKeyUsageServerAuth,
+		},
+		BasicConstraintsValid: true,
+		DNSNames:              []string{domain},
+	}
+
+	// Add the acmeValidation-v1 extension
+	h := sha256.Sum256([]byte(keyAuth))
+	ext := pkix.Extension{
+		Id:       asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 31}, // acmeValidation-v1 OID
+		Critical: false,
+		Value:    h[:],
+	}
+	template.ExtraExtensions = []pkix.Extension{ext}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create certificate: %w", err)
+	}
+
+	return &tls.Certificate{
+		Certificate: [][]byte{derBytes},
+		PrivateKey:  key,
+	}, nil
 }

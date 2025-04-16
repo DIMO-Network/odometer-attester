@@ -47,13 +47,12 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 	certLogger := logger.With().Str("component", "acme").Logger()
 	// Configure our ACME cert manager and get a certificate using ACME!
 	acm, err := acme.NewCertManager(acme.CertManagerConfig{
-		Domains:         []string{settings.HostName},
-		Email:           settings.Email,
-		Key:             certPrivateKey,
-		CADirURL:        settings.CADirURL,
-		VsockListenPort: challengePort,
-		HTTPClient:      httpClient,
-		Logger:          &certLogger,
+		Domains:    []string{settings.HostName},
+		Email:      settings.Email,
+		Key:        certPrivateKey,
+		CADirURL:   settings.CADirURL,
+		HTTPClient: httpClient,
+		Logger:     &certLogger,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create ACME cert manager: %w", err)
@@ -105,6 +104,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 		// Dynamically load certificate from ACMECertManager with every
 		// connection, so renewals work.
 		GetCertificate: acm.GetCertificate,
+		NextProtos:     []string{"acme-tls/1"},
 	}
 	return app, tlsConfig, nil
 }

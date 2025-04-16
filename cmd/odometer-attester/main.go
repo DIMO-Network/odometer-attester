@@ -75,11 +75,6 @@ func main() {
 				EnclaveListenPort: serverTunnelPort,
 				BridgeTCPPort:     uint32(settings.Port),
 			},
-			{
-				EnclaveCID:        cid,
-				EnclaveListenPort: challengeServerTunnelPort,
-				BridgeTCPPort:     uint32(settings.ChallengePort),
-			},
 		},
 		Clients: []bridgecfg.ClientSettings{
 			{

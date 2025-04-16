@@ -1,91 +1,80 @@
 package acme
 
 import (
+	"crypto/tls"
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/go-acme/lego/challenge/tlsalpn01"
 	"github.com/rs/zerolog"
 )
 
-// HTTP01Provider is a simple store for HTTP-01 challenges.
-type HTTP01Provider struct {
-	challenges map[string]string
+// TLSALPN01Provider is a simple store for TLS-ALPN-01 challenges.
+type TLSALPN01Provider struct {
+	challenges *tls.Certificate
 	mu         sync.RWMutex
 	logger     *zerolog.Logger
 }
 
-// NewHTTP01Provider creates a new HTTP01 provider.
-func NewHTTP01Provider(logger *zerolog.Logger) *HTTP01Provider {
+// NewTLSALPN01Provider creates a new TLSALPN01 provider.
+func NewTLSALPN01Provider(logger *zerolog.Logger) *TLSALPN01Provider {
 	if logger == nil {
 		l := zerolog.Nop()
 		logger = &l
 	}
-	return &HTTP01Provider{
-		challenges: make(map[string]string),
-		logger:     logger,
+	return &TLSALPN01Provider{
+		logger: logger,
 	}
 }
 
 // Present implements challenge.Provider interface
 // Adds challenge data to be validated by the CA
-func (p *HTTP01Provider) Present(domain, token, keyAuth string) error {
+func (p *TLSALPN01Provider) Present(domain, token, keyAuth string) error {
+	// Generate the challenge certificate using the provided keyAuth and domain.
+	cert, err := tlsalpn01.ChallengeCert(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 	p.mu.Lock()
-	p.challenges[token] = keyAuth
+	p.challenges = cert
 	p.mu.Unlock()
 
 	p.logger.Debug().
 		Str("domain", domain).
 		Str("token", token).
-		Msg("Stored new ACME challenge")
+		Msg("Stored new TLS-ALPN-01 challenge")
 
 	return nil
 }
 
 // CleanUp implements challenge.Provider interface
 // Removes the challenge once it's no longer needed.
-func (p *HTTP01Provider) CleanUp(domain, token, keyAuth string) error {
+func (p *TLSALPN01Provider) CleanUp(domain, token, keyAuth string) error {
 	p.mu.Lock()
-	delete(p.challenges, token)
+	p.challenges = nil
 	p.mu.Unlock()
 
 	p.logger.Debug().
 		Str("domain", domain).
 		Str("token", token).
-		Msg("Cleaned up ACME challenge")
+		Msg("Cleaned up TLS-ALPN-01 challenge")
 
 	return nil
 }
 
 // GetChallenge retrieves a challenge by token.
-func (p *HTTP01Provider) GetChallenge(token string) (string, bool) {
+func (p *TLSALPN01Provider) GetChallenge(token string) (*tls.Certificate, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	keyAuth, exists := p.challenges[token]
 
-	if exists {
+	if p.challenges != nil {
 		p.logger.Debug().
 			Str("token", token).
-			Msg("Retrieved ACME challenge")
+			Msg("Retrieved TLS-ALPN-01 challenge")
 	} else {
 		p.logger.Debug().
 			Str("token", token).
-			Msg("ACME challenge not found")
+			Msg("TLS-ALPN-01 challenge not found")
 	}
 
-	return keyAuth, exists
-}
-
-// SetupFiberHandler sets up the ACME challenge handler for a Fiber app.
-func SetupFiberHandler(app *fiber.App, provider *HTTP01Provider) {
-	app.Get("/.well-known/acme-challenge/:token", func(c *fiber.Ctx) error {
-		token := c.Params("token")
-
-		keyAuth, exists := provider.GetChallenge(token)
-		if !exists {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-
-		c.Set("Content-Type", "text/plain")
-		return c.SendString(keyAuth)
-	})
+	return p.challenges, p.challenges != nil
 }
