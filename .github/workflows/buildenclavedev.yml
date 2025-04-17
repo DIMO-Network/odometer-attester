@@ -41,7 +41,7 @@ jobs:
       - name: Extract PCR measurements
         id: extract-pcrs
         run: |
-          # Copy the PCR file from a temporary container
+          # Copy the PCR file from a temporary container using the image we just built
           CONTAINER_ID=$(docker create dimozone/${{ env.APP_NAME }}-enclave:${{ steps.slug.outputs.sha7 }})
           # Copy the PCR file from the container
           docker cp $CONTAINER_ID:/${{ env.APP_NAME }}.pcrs ./pcrs
