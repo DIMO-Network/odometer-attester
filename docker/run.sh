@@ -65,7 +65,7 @@ healthcheck() {
     
     for ((i=1; i<=retries; i++)); do
         if nitro-cli describe-enclaves | jq -e "[ .[] | select( .EnclaveName == \"$APP_NAME\" and .State == \"RUNNING\") ] | length == 1" > /dev/null; then
-            log "INFO" "Health check passed"
+            log "DEBUG" "Health check passed"
             return 0
         fi
         if [ $i -lt $retries ]; then
