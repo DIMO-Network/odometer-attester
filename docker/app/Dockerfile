@@ -35,7 +35,13 @@ COPY --from=base . /
 ENV CGO_ENABLED=0
 
 WORKDIR /build
-COPY . ./
+COPY ./cmd/ ./cmd/
+COPY ./internal/ ./internal/
+# COPY ./pkg/ ./pkg/
+COPY ./go.mod ./go.mod
+COPY ./go.sum ./go.sum
+COPY ./Makefile ./Makefile
+COPY ./docker/ ./docker/
 
 RUN make build
 RUN cp bin/${APP_NAME} bin/enclave
