@@ -32,6 +32,7 @@ build:
 	@CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(ARCH) \
 		go build -o $(PATHINSTBIN)/$(BIN_NAME) ./cmd/$(BIN_NAME)
 
+
 run: build
 	@./$(PATHINSTBIN)/$(BIN_NAME)
 all: clean target
@@ -53,8 +54,8 @@ test: ## run tests
 lint: ## run linter
 	@PATH=$$PATH golangci-lint run --timeout 10m
 
-docker: dep ## build docker image
-	@docker build -f ./docker/dockerfile . --platform $(ARCH) -t dimozone/$(BIN_NAME):$(VER_CUT)
+docker: dep ## build docker image only builds for linux/amd64
+	@docker build -f ./docker/app/Dockerfile . --platform linux/amd64 --build-arg APP_NAME=$(BIN_NAME) -t dimozone/$(BIN_NAME):$(VER_CUT)
 	@docker tag dimozone/$(BIN_NAME):$(VER_CUT) dimozone/$(BIN_NAME):latest
 
 tools-golangci-lint: ## install golangci-lint
