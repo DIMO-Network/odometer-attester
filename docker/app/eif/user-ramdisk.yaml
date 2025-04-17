@@ -38,6 +38,12 @@ files:
   - path: rootfs/bin/enclave
     source: bin/enclave
     mode: "0755"
+  - path: rootfs/etc/ssl/certs
+    directory: true
+    mode: "0755"
+  - path: rootfs/etc/ssl/certs/ca-certificates.crt
+    source: /etc/ssl/certs/ca-certificates.crt
+    mode: "0644"
   - path: cmd
     contents: "/bin/enclave"
     mode: "0644"

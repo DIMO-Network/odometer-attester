@@ -3,6 +3,7 @@ FROM stagex/make:4.4@sha256:df43f0cf3ac1ad91bf91baefb539e8df42c11b0954a6e2498322
 FROM stagex/musl:sx2024.09.0@sha256:ad351b875f26294562d21740a3ee51c23609f15e6f9f0310e0994179c4231e1d AS musl
 FROM stagex/zlib:1.3.1@sha256:96b4100550760026065dac57148d99e20a03d17e5ee20d6b32cbacd61125dbb6 AS zlib
 FROM stagex/core-git:sx2025.03.0@sha256:5b0ce8741532026bb7e6f2302855a93057a27a7f38e596e9a7fb0e782f04d0f6 AS git
+FROM stagex/ca-certificates:sx2024.09.0@sha256:33787f1feb634be4232a6dfe77578c1a9b890ad82a2cf18c11dd44507b358803 AS ca-certificates
 
 
 # enclave specific dependencies
@@ -13,7 +14,7 @@ FROM stagex/libunwind:1.7.2@sha256:97ee6068a8e8c9f1c74409f80681069c8051abb31f955
 FROM stagex/coreutils:9.4@sha256:1955f532d8923b5e17f60635c994bd9577bb3e6bccb5da702a69e79070bae0a9 AS coreutils
 FROM stagex/gcc:13.1.0@sha256:439bf36289ef036a934129d69dd6b4c196427e4f8e28bc1a3de5b9aab6e062f0 AS gcc
 
-FROM scratch as base
+FROM scratch AS base
 COPY --from=stagex/bash . /
 COPY --from=make . /
 COPY --from=musl . /
@@ -25,6 +26,7 @@ COPY --from=coreutils . /
 COPY --from=eif_build . /
 COPY --from=gcc . /
 COPY --from=bootstrap /build/out .
+COPY --from=ca-certificates /etc/ssl/certs /etc/ssl/certs
 
 FROM stagex/pallet-go AS build_go
 ARG APP_NAME

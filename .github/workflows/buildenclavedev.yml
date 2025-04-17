@@ -27,6 +27,7 @@ jobs:
         run: echo "sha7=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -36,13 +37,28 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: dimozone/${{ env.APP_NAME }}-enclave:${{ steps.slug.outputs.sha7 }}, dimozone/${{ env.APP_NAME }}-enclave:latest
+
+      - name: Extract PCR measurements
+        id: extract-pcrs
+        run: |
+          # Create a temporary container from the image
+          CONTAINER_ID=$(docker create dimozone/${{ env.APP_NAME }}-enclave:${{ steps.slug.outputs.sha7 }})
+          # Copy the PCR file from the container
+          docker cp $CONTAINER_ID:/${{ env.APP_NAME }}.pcrs ./pcrs
+          # Read the PCR measurements
+          MEASUREMENTS=$(cat ./pcrs)
+          # Clean up
+          docker rm $CONTAINER_ID
+          # Set the output
+          echo "measurements=$MEASUREMENTS" >> $GITHUB_OUTPUT
+
       - name: Update image version
         uses: fjogeleit/yaml-update-action@v0.16.0
         with:
           valueFile: "charts/odometer-attester/values.yaml"
           value: ${{ steps.slug.outputs.sha7 }}
           branch: main
-          message: "Update Image Version to ${{ steps.slug.outputs.sha7 }}\n\n${{ needs.build-enclave.outputs.measurements }}"
+          message: "Update Image Version to ${{ steps.slug.outputs.sha7 }}\n\n${{ steps.extract-pcrs.outputs.measurements }}"
           changes: |
             {
               "app.image.tag": "${{ steps.slug.outputs.sha7 }}"
