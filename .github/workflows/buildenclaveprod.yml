@@ -43,17 +43,18 @@ jobs:
       - name: Extract PCR measurements
         id: extract-pcrs
         run: |
-          # Copy the PCR file from a temporary container using the image we just built
-          CONTAINER_ID=$(docker create dimozone/${{ env.APP_NAME }}:${{ steps.tag.outputs.tag }})
-          # Copy the PCR file from the container
-          docker cp $CONTAINER_ID:/${{ env.APP_NAME }}.pcrs ./pcrs
-          # Clean up
-          docker rm $CONTAINER_ID
+          # Run the measurements command from the container
+          CONTAINER_ID=$(docker create dimozone/${{ env.APP_NAME }}:${{ steps.tag.outputs.tag }} /run.sh measurements)
+          # Get the output
+          docker start $CONTAINER_ID
+          docker wait $CONTAINER_ID
           # Set the output with proper formatting
           echo "measurements<<EOF" >> $GITHUB_OUTPUT
           echo "PCR Measurements:" >> $GITHUB_OUTPUT
-          cat ./pcrs >> $GITHUB_OUTPUT
+          docker logs $CONTAINER_ID >> $GITHUB_OUTPUT
           printf "\nEOF\n" >> $GITHUB_OUTPUT
+          # Clean up
+          docker rm $CONTAINER_ID
 
       - name: Update image version
         uses: fjogeleit/yaml-update-action@v0.16.0

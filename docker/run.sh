@@ -6,6 +6,7 @@ set -euo pipefail
 # Configuration
 readonly APP_NAME=${APP_NAME:-"enclave-app"}
 readonly EIF_PATH="/$APP_NAME.eif"
+readonly LOG_LEVEL=${LOG_LEVEL:-"INFO"}  # Default to INFO level
 
 # Enclave configuration with reasonable defaults
 readonly ENCLAVE_CPU_COUNT=${ENCLAVE_CPU_COUNT:-1}
@@ -16,7 +17,24 @@ readonly ENCLAVE_CID=${ENCLAVE_CID:-16}
 log() {
     local level=$1
     shift
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $*"
+    
+    # Define log level priorities
+    local -A log_levels=(
+        ["DEBUG"]=0
+        ["INFO"]=1
+        ["WARN"]=2
+        ["ERROR"]=3
+        ["NONE"]=4
+    )
+    
+    # Get the numeric priority of the current log level and configured log level
+    local current_priority=${log_levels[$level]}
+    local configured_priority=${log_levels[$LOG_LEVEL]}
+    
+    # Only log if the current level is at or above the configured level
+    if [ "$current_priority" -ge "$configured_priority" ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $*"
+    fi
 }
 
 # Error handling function
