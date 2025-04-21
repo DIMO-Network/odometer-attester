@@ -29,4 +29,13 @@ type Settings struct {
 	CADirURL string `env:"CA_DIR_URL" yaml:"caDirUrl"`
 	Email    string `env:"EMAIL"      yaml:"email"`
 	HostName string `env:"HOST_NAME"  yaml:"hostName"`
+
+	// Cert settings
+	CertSettings CertSettings
+}
+
+// CertSettings contains the settings for the certificates.
+type CertSettings struct {
+	CertFile string `env:"CERT_FILE" yaml:"certFile"`
+	KeyFile  string `env:"KEY_FILE"  yaml:"keyFile"`
 }

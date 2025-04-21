@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DIMO-Network/enclave-bridge/pkg/certs/acme"
 	"github.com/DIMO-Network/enclave-bridge/pkg/client"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
 	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
@@ -20,7 +21,6 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
-	"github.com/DIMO-Network/odometer-attester/internal/tmp/acme"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -58,13 +58,10 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 		return nil, nil, fmt.Errorf("failed to create ACME cert manager: %w", err)
 	}
 
-	// TODO(kevin): this needs to be moved
-	go func() {
-		err = certService.Start(context.TODO(), logger)
-		if err != nil {
-			logger.Err(err).Msg("failed to start ACME cert manager")
-		}
-	}()
+	err = certService.Start(context.TODO(), logger)
+	if err != nil {
+		logger.Err(err).Msg("failed to start ACME cert manager")
+	}
 
 	// Setup the controller with all its dependencies
 	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, certService.GetCertificate)
