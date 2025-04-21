@@ -15,7 +15,7 @@ import (
 	bridgecfg "github.com/DIMO-Network/enclave-bridge/pkg/config"
 	"github.com/DIMO-Network/enclave-bridge/pkg/enclave"
 
-	// _ "github.com/DIMO-Network/odometer-attester/docs"
+	_ "github.com/DIMO-Network/odometer-attester/docs"
 	"github.com/DIMO-Network/odometer-attester/internal/app"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/gofiber/fiber/v2"
