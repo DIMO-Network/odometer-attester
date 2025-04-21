@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DIMO-Network/enclave-bridge/pkg/certs"
 	"github.com/DIMO-Network/enclave-bridge/pkg/certs/acme"
 	"github.com/DIMO-Network/enclave-bridge/pkg/client"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
@@ -28,46 +29,50 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// CreateEnclaveWebServer creates a new web server with the given logger and settings.
 func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort uint32, settings *config.Settings) (*fiber.App, *tls.Config, error) {
+	walletPrivateKey, certPrivateKey, err := GetKeys(settings, logger)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get keys: %w", err)
+	}
+
+	// Setup HTTP client
+	httpClient := client.NewHTTPClient(clientPort, nil)
+	var certFunc certs.GetCertificateFunc
+	var tlsConfig *tls.Config
+	if settings.TLS.Enabled {
+		tlsConfig, err = setupTLSConfig(settings, certPrivateKey, httpClient, logger)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to setup TLS config: %w", err)
+		}
+		certFunc = tlsConfig.GetCertificate
+	}
+
+	// Setup the controller with all its dependencies
+	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, certFunc)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to setup controller: %w", err)
+	}
+
+	app := createApp(logger, ctrl)
+
+	app.Get("/keys/unsafe", func(ctx *fiber.Ctx) error {
+		return ctx.JSON(map[string]string{
+			"certPublicKey": hex.EncodeToString(crypto.FromECDSAPub(&certPrivateKey.PublicKey)),
+			"pk":            hex.EncodeToString(crypto.FromECDSA(walletPrivateKey)),
+			"pub":           hex.EncodeToString(crypto.FromECDSAPub(&walletPrivateKey.PublicKey)),
+			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
+		})
+	})
+	return app, tlsConfig, nil
+}
+
+func createApp(logger *zerolog.Logger, ctrl *Controller) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
 		},
 		DisableStartupMessage: true,
 	})
-	// Setup HTTP client
-	httpClient := client.NewHTTPClient(clientPort, nil)
-
-	walletPrivateKey, certPrivateKey, err := GetKeys(settings, logger)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get keys: %w", err)
-	}
-
-	certLogger := logger.With().Str("component", "acme").Logger()
-	// Configure our ACME cert manager and get a certificate using ACME!
-	certService, err := acme.NewCertManager(acme.CertManagerConfig{
-		Domains:    []string{settings.HostName},
-		Email:      settings.Email,
-		Key:        certPrivateKey,
-		CADirURL:   settings.CADirURL,
-		HTTPClient: httpClient,
-		Logger:     &certLogger,
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create ACME cert manager: %w", err)
-	}
-
-	err = certService.Start(context.TODO(), logger)
-	if err != nil {
-		logger.Err(err).Msg("failed to start ACME cert manager")
-	}
-
-	// Setup the controller with all its dependencies
-	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, certService.GetCertificate)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to setup controller: %w", err)
-	}
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
@@ -88,20 +93,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 	app.Get("/vehicle/:tokenId", ctrl.GetVehicleInfo)
 	app.Get("/vehicle/:tokenId/odometer", ctrl.GetOdometer)
 	app.Get("/keys", ctrl.GetKeys)
-	app.Get("/keys/unsafe", func(ctx *fiber.Ctx) error {
-		return ctx.JSON(map[string]string{
-			"certPublicKey": hex.EncodeToString(crypto.FromECDSAPub(&certPrivateKey.PublicKey)),
-			"pk":            hex.EncodeToString(crypto.FromECDSA(walletPrivateKey)),
-			"pub":           hex.EncodeToString(crypto.FromECDSAPub(&walletPrivateKey.PublicKey)),
-			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
-		})
-	})
-	tlsConfig := &tls.Config{
-		MinVersion:     tls.VersionTLS12,
-		NextProtos:     []string{"http/1.1", "acme-tls/1"},
-		GetCertificate: certService.GetCertificate,
-	}
-	return app, tlsConfig, nil
+	return app
 }
 
 // HealthCheck godoc
@@ -211,4 +203,39 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, httpClie
 
 	// Create controller with all required clients
 	return NewController(settings, logger, identClient, telemetryClient, privateKey, getCert)
+}
+
+// setupTLSConfig configures TLS settings including certificate management
+func setupTLSConfig(settings *config.Settings, certPrivateKey *ecdsa.PrivateKey, httpClient *http.Client, logger *zerolog.Logger) (*tls.Config, error) {
+	if settings.TLS.LocalCerts.CertFile != "" && settings.TLS.LocalCerts.KeyFile != "" {
+		certFunc, err := certs.GetCertificatesFromSettings(&settings.TLS.LocalCerts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get certificates from settings: %w", err)
+		}
+		return &tls.Config{
+			MinVersion:     tls.VersionTLS12,
+			GetCertificate: certFunc,
+		}, nil
+	}
+	certLogger := logger.With().Str("component", "acme").Logger()
+	// Configure our ACME cert manager and get a certificate using ACME!
+	certService, err := acme.NewCertManager(&acme.CertManagerConfig{
+		ACMEConfig: &settings.TLS.ACMEConfig,
+		Key:        certPrivateKey,
+		HTTPClient: httpClient,
+		Logger:     &certLogger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ACME cert manager: %w", err)
+	}
+
+	err = certService.Start(context.TODO(), logger)
+	if err != nil {
+		logger.Err(err).Msg("failed to start ACME cert manager")
+	}
+	return &tls.Config{
+		MinVersion:     tls.VersionTLS12,
+		GetCertificate: certService.GetCertificate,
+		NextProtos:     []string{"http/1.1", "acme-tls/1"},
+	}, nil
 }

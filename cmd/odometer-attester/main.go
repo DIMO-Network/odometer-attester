@@ -129,8 +129,10 @@ func main() {
 // RunFiberWithListener runs a fiber server with a listener and returns a context that can be used to stop the server.
 func RunFiberWithListener(ctx context.Context, fiberApp *fiber.App, listener net.Listener, tlsConfig *tls.Config, group *errgroup.Group) {
 	group.Go(func() error {
-		ln := tls.NewListener(listener, tlsConfig)
-		if err := fiberApp.Listener(ln); err != nil {
+		if tlsConfig != nil {
+			listener = tls.NewListener(listener, tlsConfig)
+		}
+		if err := fiberApp.Listener(listener); err != nil {
 			return fmt.Errorf("failed to start server: %w", err)
 		}
 		return nil
