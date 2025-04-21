@@ -1,6 +1,9 @@
 package config
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"github.com/DIMO-Network/enclave-bridge/pkg/config"
+	"github.com/ethereum/go-ethereum/common"
+)
 
 // Settings contains the application config.
 type Settings struct {
@@ -25,17 +28,5 @@ type Settings struct {
 	// Dev fake key
 	DevFakeKey string `env:"DEV_FAKE_KEY" yaml:"devFakeKey"`
 
-	// CA settings
-	CADirURL string `env:"CA_DIR_URL" yaml:"caDirUrl"`
-	Email    string `env:"EMAIL"      yaml:"email"`
-	HostName string `env:"HOST_NAME"  yaml:"hostName"`
-
-	// Cert settings
-	CertSettings CertSettings
-}
-
-// CertSettings contains the settings for the certificates.
-type CertSettings struct {
-	CertFile string `env:"CERT_FILE" yaml:"certFile"`
-	KeyFile  string `env:"KEY_FILE"  yaml:"keyFile"`
+	TLS config.TLSConfig `envPrefix:"TLS_"`
 }

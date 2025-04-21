@@ -40,7 +40,7 @@ type Controller struct {
 	devLicense             string
 	privateKey             *ecdsa.PrivateKey
 	lastCert               *tls.Certificate
-	getCert                func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+	getCertFunc            func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 }
 
 func NewController(
@@ -49,7 +49,7 @@ func NewController(
 	identityClient *identity.Client,
 	telemetryClient *telemetry.Client,
 	privateKey *ecdsa.PrivateKey,
-	getCert func(*tls.ClientHelloInfo) (*tls.Certificate, error),
+	getCertFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error),
 ) (*Controller, error) {
 	if privateKey == nil {
 		return nil, errors.New("private key is nil")
@@ -61,6 +61,7 @@ func NewController(
 		privateKey:      privateKey,
 		publicKey:       &privateKey.PublicKey,
 		devLicense:      settings.DeveloperLicense,
+		getCertFunc:     getCertFunc,
 	}, nil
 }
 
@@ -103,19 +104,8 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 
 // GetNSMAttestations returns the NSM attestation.
 func (c *Controller) GetNSMAttestations(ctx *fiber.Ctx) error {
-	cert, err := c.getCert(nil)
-	if err != nil {
-		c.logger.Error().Err(err).Msg("Failed to get certificate")
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get certificate")
-	}
+	certBytes, err := c.getCert(nil)
 
-	// If the certificate is the same and the not after date is in the future, return the cached result
-	if c.lastCert == cert && c.nsmResult.Certificates[0].NotAfter.After(time.Now()) {
-		return ctx.JSON(c.nsmResult)
-	}
-
-	c.lastCert = cert
-	certBytes, err := x509.MarshalPKIXPublicKey(cert.Certificate[0])
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to marshal certificate")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to marshal certificate")
@@ -148,6 +138,36 @@ func (c *Controller) GetKeys(ctx *fiber.Ctx) error {
 
 func (c *Controller) GetUnsafeKeys(ctx *fiber.Ctx) error {
 	return ctx.JSON(c.nsmResult)
+}
+
+func (c *Controller) getCert(hello *tls.ClientHelloInfo) ([]byte, error) {
+	if c.getCertFunc == nil {
+		// No certificate function configured, return nil
+		return nil, nil
+	}
+	cert, err := c.getCertFunc(hello)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get certificate")
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to get certificate")
+	}
+
+	// If the certificate is the same and the not after date is in the future, return the cached result
+	if c.lastCert == cert {
+		if cert == nil {
+			return nil, nil
+		}
+		if c.nsmResult.Certificates[0].NotAfter.After(time.Now()) {
+			return x509.MarshalPKIXPublicKey(cert.Certificate[0])
+		}
+	}
+
+	c.lastCert = cert
+	certBytes, err := x509.MarshalPKIXPublicKey(cert.Certificate[0])
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to marshal certificate")
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to marshal certificate")
+	}
+	return certBytes, nil
 }
 
 func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloudevent.CloudEvent[json.RawMessage], error) {
