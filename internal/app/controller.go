@@ -65,6 +65,17 @@ func NewController(
 	}, nil
 }
 
+// GetVehicleInfo godoc
+// @Summary Get vehicle information
+// @Description Get information about a specific vehicle by token ID
+// @Tags vehicle
+// @Accept json
+// @Produce json
+// @Param tokenId path string true "Vehicle Token ID"
+// @Success 200 {object} identity.GraphQLResponse
+// @Failure 400 {object} codeResp
+// @Failure 500 {object} codeResp
+// @Router /vehicle/{tokenId} [get]
 func (c *Controller) GetVehicleInfo(ctx *fiber.Ctx) error {
 	vehicleTokenID := ctx.Params("tokenId")
 	vehicleTokenIDUint, err := strconv.ParseUint(vehicleTokenID, 10, 32)
@@ -81,6 +92,17 @@ func (c *Controller) GetVehicleInfo(ctx *fiber.Ctx) error {
 	return ctx.JSON(vehicleInfo)
 }
 
+// GetOdometer godoc
+// @Summary Get vehicle odometer reading
+// @Description Get the odometer reading for a specific vehicle by token ID
+// @Tags vehicle
+// @Accept json
+// @Produce json
+// @Param tokenId path string true "Vehicle Token ID"
+// @Success 200 {object} cloudevent.CloudEvent[json.RawMessage]
+// @Failure 400 {object} codeResp
+// @Failure 500 {object} codeResp
+// @Router /vehicle/{tokenId}/odometer [get]
 func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	vehicleTokenID := ctx.Params("tokenId")
 	vehicleTokenIDUint, err := strconv.ParseUint(vehicleTokenID, 10, 32)
@@ -102,7 +124,15 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	return ctx.JSON(attestation)
 }
 
-// GetNSMAttestations returns the NSM attestation.
+// GetNSMAttestations godoc
+// @Summary Get NSM attestation
+// @Description Get the Nitro Security Module attestation
+// @Tags attestation
+// @Accept json
+// @Produce json
+// @Success 200 {object} nitrite.Result
+// @Failure 500 {object} codeResp
+// @Router /.well-known/nsm-attestation [get]
 func (c *Controller) GetNSMAttestations(ctx *fiber.Ctx) error {
 	certBytes, err := c.getCert(nil)
 
@@ -127,7 +157,14 @@ type KeysResponse struct {
 	EthereumAddress string `json:"ethereumAddress"`
 }
 
-// GetKeys returns the public key and ethereum address of the controller.
+// GetKeys godoc
+// @Summary Get public keys
+// @Description Get the public key and Ethereum address of the controller
+// @Tags keys
+// @Accept json
+// @Produce json
+// @Success 200 {object} KeysResponse
+// @Router /keys [get]
 func (c *Controller) GetKeys(ctx *fiber.Ctx) error {
 	keyResponse := KeysResponse{
 		PublicKey:       "0x" + hex.EncodeToString(crypto.FromECDSAPub(c.publicKey)),

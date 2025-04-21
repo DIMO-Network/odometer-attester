@@ -26,6 +26,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
 )
 
@@ -80,6 +81,10 @@ func createApp(logger *zerolog.Logger, ctrl *Controller) *fiber.App {
 		StackTraceHandler: nil,
 	}))
 	app.Use(cors.New())
+
+	// Swagger documentation
+	app.Get("/swagger/*", swagger.HandlerDefault)
+
 	app.Get("/", HealthCheck)
 	app.Get("/forward", func(ctx *fiber.Ctx) error {
 		logger.Debug().Msg("Forward request received")

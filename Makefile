@@ -62,10 +62,13 @@ tools-golangci-lint: ## install golangci-lint
 	@mkdir -p $(PATHINSTBIN)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | BINARY=golangci-lint bash -s -- ${GOLANGCI_VERSION}
 
-
 make tools: tools-golangci-lint ## install all tools
 
-generate: generate-go  ## run all file generation for the project
+generate: generate-go generate-swagger ## run all file generation for the project
 
 generate-go:## run go generate
 	@go generate ./...
+
+generate-swagger: ## generate swagger documentation
+	@go tool swag -version
+	go tool swag init -g cmd/odometer-attester/main.go -o docs --parseDependency --parseInternal

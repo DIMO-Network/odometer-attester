@@ -11,8 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	// import docs for swagger generation.
 	bridgecfg "github.com/DIMO-Network/enclave-bridge/pkg/config"
 	"github.com/DIMO-Network/enclave-bridge/pkg/enclave"
+
+	// _ "github.com/DIMO-Network/odometer-attester/docs"
 	"github.com/DIMO-Network/odometer-attester/internal/app"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -20,6 +23,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// @title Odometer Attester API
+// @version 1.0
+// @description This is the API documentation for the Odometer Attester service
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
 const (
 	// heartInterval is the interval to check if the enclave is still alive.
 	heartInterval = 10 * time.Second
