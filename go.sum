@@ -1,7 +1,7 @@
 github.com/DIMO-Network/cloudevent v0.0.4 h1:uAACCZtZhdNYomz+enc1c9CZRDNRpau7jJQEwmvd0LA=
 github.com/DIMO-Network/cloudevent v0.0.4/go.mod h1:uY68qV/p18qtbMzLpBCci3QrJzhDPlDt+QcMrh5XY2s=
-github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250421144602-c7976dce15a9 h1:+oPsudckdeOqQnDvhbCOZacOh9MDqq05Q1MunbcN94A=
-github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250421144602-c7976dce15a9/go.mod h1:nwPC9JycI6p3SreihYSQriqVCzzwM5aRcMgDkFHrlU4=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422004114-a8c07aa94be3 h1:4Mjaj6exuXKmb7V/zf7SN0kp+xTBGNwZf390eCjehDo=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422004114-a8c07aa94be3/go.mod h1:nwPC9JycI6p3SreihYSQriqVCzzwM5aRcMgDkFHrlU4=
 github.com/DIMO-Network/shared v0.12.10 h1:taiAs09lyfV34SpGjesNjd4ljbMcCKrm18rhG+SizaM=
 github.com/DIMO-Network/shared v0.12.10/go.mod h1:lDHUKwwT2LW6Zvd42Nb33dXklRNTmfyOlbUNx2dQfGY=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
