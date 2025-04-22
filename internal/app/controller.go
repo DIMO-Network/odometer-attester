@@ -160,13 +160,8 @@ func (c *Controller) GetNSMAttestations(ctx *fiber.Ctx) error {
 	if nonce != "" {
 		nonceBytes = []byte(nonce)
 	}
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey)
-	if err != nil {
-		c.logger.Error().Err(err).Msg("Failed to marshal public key")
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to marshal public key")
-	}
 	req := &request.Attestation{
-		PublicKey: publicKeyBytes,
+		PublicKey: crypto.FromECDSAPub(c.publicKey),
 		UserData:  certBytes,
 		Nonce:     nonceBytes,
 	}
