@@ -8,7 +8,7 @@ bridge:
   image:
     repository: dimozone/enclave-bridge
     pullPolicy: IfNotPresent
-    tag: a8c07aa
+    tag: 3a7e68f
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
@@ -26,6 +26,7 @@ bridge:
     IDENTITY_API_URL: https://identity-api.dimo.zone
     TELEMETRY_API_URL: https://telemetry-api.dimo.zone
     TOKEN_EXCHANGE_URL: https://token-exchange-api.dimo.zone
+    SIGNER_REGISTRY_URL: https://enclave-signer-registry.dev.dimo.zone
     DEV_FAKE_KEY: 073564dcc1a9745fef22ac023b635604dc7c3dda2b84165b7eff5ccd68d48fe7
     TLS_ENABLED: false
     TLS_ACME_HOST_NAME: odometer-attester.dev.dimo.zone
