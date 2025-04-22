@@ -1,18 +1,23 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
+	"github.com/DIMO-Network/enclave-bridge/pkg/attest"
 	"github.com/DIMO-Network/enclave-bridge/pkg/certs"
 	"github.com/DIMO-Network/enclave-bridge/pkg/certs/acme"
 	"github.com/DIMO-Network/enclave-bridge/pkg/client"
@@ -27,6 +32,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
+	"github.com/hf/nsm/request"
 	"github.com/rs/zerolog"
 )
 
@@ -64,6 +70,11 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
 		})
 	})
+
+	err = registerKeys(context.Background(), logger, settings, httpClient, &certPrivateKey.PublicKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to register keys: %w", err)
+	}
 	return app, tlsConfig, nil
 }
 
@@ -243,4 +254,51 @@ func setupTLSConfig(settings *config.Settings, certPrivateKey *ecdsa.PrivateKey,
 		GetCertificate: certService.GetCertificate,
 		NextProtos:     []string{"http/1.1", "acme-tls/1"},
 	}, nil
+}
+
+type AddSignerRequest struct {
+	SignerAddress       string `json:"signerAddress"`
+	AttestationDocument []byte `json:"attestationDocument"`
+}
+
+func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, publicKey *ecdsa.PublicKey) error {
+	endpoint, err := url.JoinPath(settings.SignerRegistryURL, "add-signer")
+	if err != nil {
+		return fmt.Errorf("failed to join URL: %w", err)
+	}
+
+	attRequest := &request.Attestation{
+		PublicKey: crypto.FromECDSAPub(publicKey),
+	}
+	document, _, err := attest.GetNSMAttestation(attRequest)
+	if err != nil {
+		return fmt.Errorf("failed to get NSM attestation: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	signerRequest := AddSignerRequest{
+		SignerAddress:       crypto.PubkeyToAddress(*publicKey).Hex(),
+		AttestationDocument: document,
+	}
+	reqData, err := json.Marshal(signerRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal signer request: %w", err)
+	}
+	req.Body = io.NopCloser(bytes.NewBuffer(reqData))
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to register keys: %s", string(body))
+	}
+
+	return nil
 }

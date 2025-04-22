@@ -13,17 +13,18 @@ type Settings struct {
 	MonPort     int    `env:"MON_PORT"       yaml:"monPort"`
 
 	// Token Exchange settings
-	TokenExchangeURL          string         `env:"TOKEN_EXCHANGE_URL"           yaml:"tokenExchangeUrl"`
 	VehicleNFTContractAddress common.Address `env:"VEHICLE_NFT_CONTRACT_ADDRESS" yaml:"vehicleNftContractAddress"`
 	DeveloperLicense          string         `env:"DEVELOPER_LICENSE"            yaml:"developerLicense"`
 	ChainID                   uint64         `env:"CHAIN_ID"                     yaml:"chainId"`
 	// Dex settings
-	DexURL     string `env:"DEX_URL"     yaml:"dexUrl"`
 	PrivateKey string `env:"PRIVATE_KEY" yaml:"privateKey"`
 
 	// API URLs
-	TelemetryAPIURL string `env:"TELEMETRY_API_URL" yaml:"telemetryApiUrl"`
-	IdentityAPIURL  string `env:"IDENTITY_API_URL"  yaml:"identityApiUrl"`
+	TokenExchangeURL  string `env:"TOKEN_EXCHANGE_URL" yaml:"tokenExchangeUrl"`
+	DexURL            string `env:"DEX_URL"            yaml:"dexUrl"`
+	TelemetryAPIURL   string `env:"TELEMETRY_API_URL"  yaml:"telemetryApiUrl"`
+	IdentityAPIURL    string `env:"IDENTITY_API_URL"   yaml:"identityApiUrl"`
+	SignerRegistryURL string `env:"SIGNER_REGISTRY_URL" yaml:"signerRegistryUrl"`
 
 	// Dev fake key
 	DevFakeKey string `env:"DEV_FAKE_KEY" yaml:"devFakeKey"`
