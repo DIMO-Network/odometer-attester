@@ -7,7 +7,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/tls"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,15 +60,6 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 	}
 
 	app := createApp(logger, ctrl)
-
-	app.Get("/keys/unsafe", func(ctx *fiber.Ctx) error {
-		return ctx.JSON(map[string]string{
-			"certPublicKey": hex.EncodeToString(crypto.FromECDSAPub(&certPrivateKey.PublicKey)),
-			"pk":            hex.EncodeToString(crypto.FromECDSA(walletPrivateKey)),
-			"pub":           hex.EncodeToString(crypto.FromECDSAPub(&walletPrivateKey.PublicKey)),
-			"pubAddr":       crypto.PubkeyToAddress(walletPrivateKey.PublicKey).Hex(),
-		})
-	})
 
 	err = registerKeys(context.Background(), logger, settings, httpClient, &walletPrivateKey.PublicKey)
 	if err != nil {
