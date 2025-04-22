@@ -27,7 +27,7 @@ bridge:
     TELEMETRY_API_URL: https://telemetry-api.dimo.zone
     TOKEN_EXCHANGE_URL: https://token-exchange-api.dimo.zone
     SIGNER_REGISTRY_URL: https://enclave-signer-registry.dev.dimo.zone
-    DEV_FAKE_KEY: 073564dcc1a9745fef22ac023b635604dc7c3dda2b84165b7eff5ccd68d48fe7
+    # DEV_FAKE_KEY: 073564dcc1a9745fef22ac023b635604dc7c3dda2b84165b7eff5ccd68d48fe7
     TLS_ENABLED: false
     TLS_ACME_HOST_NAME: odometer-attester.dev.dimo.zone
     TLS_ACME_CA_DIR_URL: https://acme-staging-v02.api.letsencrypt.org/directory
