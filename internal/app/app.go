@@ -71,7 +71,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort ui
 		})
 	})
 
-	err = registerKeys(context.Background(), logger, settings, httpClient, &certPrivateKey.PublicKey)
+	err = registerKeys(context.Background(), logger, settings, httpClient, &walletPrivateKey.PublicKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to register keys: %w", err)
 	}
