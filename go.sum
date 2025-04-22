@@ -1,9 +1,7 @@
 github.com/DIMO-Network/cloudevent v0.0.4 h1:uAACCZtZhdNYomz+enc1c9CZRDNRpau7jJQEwmvd0LA=
 github.com/DIMO-Network/cloudevent v0.0.4/go.mod h1:uY68qV/p18qtbMzLpBCci3QrJzhDPlDt+QcMrh5XY2s=
-github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422004114-a8c07aa94be3 h1:4Mjaj6exuXKmb7V/zf7SN0kp+xTBGNwZf390eCjehDo=
-github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422004114-a8c07aa94be3/go.mod h1:nwPC9JycI6p3SreihYSQriqVCzzwM5aRcMgDkFHrlU4=
-github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422015924-3a7e68f3b26b h1:djvs8wHEYsZQspvwrOhiimt1aCkHIul9SAP3mtEWy3I=
-github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422015924-3a7e68f3b26b/go.mod h1:nwPC9JycI6p3SreihYSQriqVCzzwM5aRcMgDkFHrlU4=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422162259-57e37d6eb2dc h1:GYxLi/SxD9Oubb5XLND0gA1G7SHWVOlH708Nn87duAk=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250422162259-57e37d6eb2dc/go.mod h1:nwPC9JycI6p3SreihYSQriqVCzzwM5aRcMgDkFHrlU4=
 github.com/DIMO-Network/shared v0.12.10 h1:taiAs09lyfV34SpGjesNjd4ljbMcCKrm18rhG+SizaM=
 github.com/DIMO-Network/shared v0.12.10/go.mod h1:lDHUKwwT2LW6Zvd42Nb33dXklRNTmfyOlbUNx2dQfGY=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=

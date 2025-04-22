@@ -58,14 +58,21 @@ func main() {
 		initPort = uint32(initPort64)
 	}
 
-	enclaveSetup := enclave.EnclaveSetup[config.Settings]{}
+	enclaveSetup := enclave.EnclaveSetup{}
 	err = enclaveSetup.Start(initPort)
 	if err != nil {
+		_ = enclaveSetup.SendError(fmt.Sprintf("failed to setup bridge: %v", err))
 		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
-	settings := enclaveSetup.Config()
+	settings, err := enclave.ConfigFromEnvMap[config.Settings](enclaveSetup.Environment())
+	if err != nil {
+		_ = enclaveSetup.SendError(fmt.Sprintf("failed to parse environment variables: %v", err))
+		tmpLogger.Fatal().Err(err).Msg("Failed to parse environment variables.")
+	}
+
 	err = enclave.SetLoggerLevel(settings.LogLevel)
 	if err != nil {
+		_ = enclaveSetup.SendError(fmt.Sprintf("failed to set logger level: %v", err))
 		tmpLogger.Fatal().Err(err).Msg("Failed to set logger level.")
 	}
 
