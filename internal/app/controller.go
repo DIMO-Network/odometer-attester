@@ -40,7 +40,6 @@ type Controller struct {
 	chainID                uint64
 	devLicense             string
 	privateKey             *ecdsa.PrivateKey
-	lastCert               *tls.Certificate
 	getCertFunc            func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 }
 

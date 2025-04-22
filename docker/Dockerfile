@@ -58,6 +58,7 @@ COPY ./docker/eif/ ./eif/
 
 # Note: Add any additional files needed for the build here
 # COPY ./pkg/ ./pkg/
+COPY ./docs/ ./docs/
 
 # Build application
 ENV CGO_ENABLED=0
