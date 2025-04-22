@@ -56,7 +56,7 @@ app:
   image:
     repository: dimozone/odometer-attester
     pullPolicy: IfNotPresent
-    tag: 0fcdd19
+    tag: 16ecf84
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
