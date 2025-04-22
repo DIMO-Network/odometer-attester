@@ -52,11 +52,19 @@ const docTemplate = `{
                     "attestation"
                 ],
                 "summary": "Get NSM attestation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Nonce",
+                        "name": "nonce",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/nitrite.Result"
+                            "$ref": "#/definitions/internal_app.NsmAttestationResponse"
                         }
                     },
                     "500": {
@@ -324,6 +332,20 @@ const docTemplate = `{
                 },
                 "publicKey": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_app.NsmAttestationResponse": {
+            "type": "object",
+            "properties": {
+                "attestation": {
+                    "$ref": "#/definitions/nitrite.Result"
+                },
+                "document": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },

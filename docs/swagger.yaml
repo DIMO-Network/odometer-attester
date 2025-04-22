@@ -113,6 +113,15 @@ definitions:
       publicKey:
         type: string
     type: object
+  internal_app.NsmAttestationResponse:
+    properties:
+      attestation:
+        $ref: '#/definitions/nitrite.Result'
+      document:
+        items:
+          type: integer
+        type: array
+    type: object
   internal_app.codeResp:
     properties:
       code:
@@ -792,13 +801,18 @@ paths:
       consumes:
       - application/json
       description: Get the Nitro Security Module attestation
+      parameters:
+      - description: Nonce
+        in: query
+        name: nonce
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/nitrite.Result'
+            $ref: '#/definitions/internal_app.NsmAttestationResponse'
         "500":
           description: Internal Server Error
           schema:

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/tls"
 	"crypto/x509"
@@ -124,32 +125,60 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	return ctx.JSON(attestation)
 }
 
+type NsmAttestationResponse struct {
+	Result    *nitrite.Result `json:"attestation"`
+	RawResult []byte          `json:"document"`
+}
+
 // GetNSMAttestations godoc
 // @Summary Get NSM attestation
 // @Description Get the Nitro Security Module attestation
 // @Tags attestation
 // @Accept json
 // @Produce json
-// @Success 200 {object} nitrite.Result
+// @Param nonce query string false "Nonce"
+// @Success 200 {object} NsmAttestationResponse
 // @Failure 500 {object} codeResp
 // @Router /.well-known/nsm-attestation [get]
 func (c *Controller) GetNSMAttestations(ctx *fiber.Ctx) error {
-	certBytes, err := c.getCert(nil)
-
+	certBytes, err := c.getCert()
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to marshal certificate")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to marshal certificate")
 	}
-	req := &request.Attestation{
-		PublicKey: crypto.FromECDSAPub(c.publicKey),
-		UserData:  certBytes,
+	nonce := ctx.Query("nonce")
+
+	// if nonce is empty, check if the cached result is valid
+	if nonce == "" && c.nsmResult != nil && len(c.nsmResult.Certificates) > 0 &&
+		c.nsmResult.Certificates[0] != nil &&
+		c.nsmResult.Certificates[0].NotAfter.After(time.Now()) &&
+		bytes.Equal(c.nsmResult.Document.UserData, certBytes) {
+		return ctx.JSON(c.nsmResult)
 	}
-	c.nsmResult, err = attest.GetNSMAttestation(req)
+
+	// I want to pass in nil when nonce is empty not sure if it matters
+	var nonceBytes []byte
+	if nonce != "" {
+		nonceBytes = []byte(nonce)
+	}
+
+	req := &request.Attestation{
+		UserData: certBytes,
+		Nonce:    nonceBytes,
+	}
+	document, nsmResult, err := attest.GetNSMAttestation(req)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get NSM attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get NSM attestation")
 	}
-	return ctx.JSON(c.nsmResult)
+	if nonce == "" {
+		// only cache the result if nonce is empty
+		c.nsmResult = nsmResult
+	}
+	return ctx.JSON(NsmAttestationResponse{
+		Result:    nsmResult,
+		RawResult: document,
+	})
 }
 
 type KeysResponse struct {
@@ -177,28 +206,20 @@ func (c *Controller) GetUnsafeKeys(ctx *fiber.Ctx) error {
 	return ctx.JSON(c.nsmResult)
 }
 
-func (c *Controller) getCert(hello *tls.ClientHelloInfo) ([]byte, error) {
+func (c *Controller) getCert() ([]byte, error) {
 	if c.getCertFunc == nil {
 		// No certificate function configured, return nil
 		return nil, nil
 	}
-	cert, err := c.getCertFunc(hello)
+	cert, err := c.getCertFunc(nil)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get certificate")
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to get certificate")
 	}
-
-	// If the certificate is the same and the not after date is in the future, return the cached result
-	if c.lastCert == cert {
-		if cert == nil {
-			return nil, nil
-		}
-		if c.nsmResult.Certificates[0].NotAfter.After(time.Now()) {
-			return x509.MarshalPKIXPublicKey(cert.Certificate[0])
-		}
+	if cert == nil {
+		return nil, nil
 	}
 
-	c.lastCert = cert
 	certBytes, err := x509.MarshalPKIXPublicKey(cert.Certificate[0])
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to marshal certificate")
