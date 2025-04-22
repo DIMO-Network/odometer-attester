@@ -274,11 +274,6 @@ func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.
 	if err != nil {
 		return fmt.Errorf("failed to get NSM attestation: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
 	signerRequest := AddSignerRequest{
 		SignerAddress:       crypto.PubkeyToAddress(*publicKey).Hex(),
 		AttestationDocument: document,
@@ -287,7 +282,11 @@ func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.
 	if err != nil {
 		return fmt.Errorf("failed to marshal signer request: %w", err)
 	}
-	req.Body = io.NopCloser(bytes.NewBuffer(reqData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewBuffer(reqData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

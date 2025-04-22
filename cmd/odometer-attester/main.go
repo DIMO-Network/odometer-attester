@@ -61,8 +61,9 @@ func main() {
 	enclaveSetup := enclave.EnclaveSetup{}
 	err = enclaveSetup.Start(initPort)
 	if err != nil {
+		tmpLogger.Error().Err(err).Msg("Failed to setup bridge.")
 		_ = enclaveSetup.SendError(fmt.Sprintf("failed to setup bridge: %v", err))
-		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
+		os.Exit(1)
 	}
 	settings, err := enclave.ConfigFromEnvMap[config.Settings](enclaveSetup.Environment())
 	if err != nil {
@@ -72,7 +73,7 @@ func main() {
 
 	err = enclave.SetLoggerLevel(settings.LogLevel)
 	if err != nil {
-		_ = enclaveSetup.SendError(fmt.Sprintf("failed to set logger level: %v", err))
+		enclaveSetup.SendError(fmt.Sprintf("failed to set logger level: %v", err))
 		tmpLogger.Fatal().Err(err).Msg("Failed to set logger level.")
 	}
 
