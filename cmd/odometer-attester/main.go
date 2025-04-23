@@ -72,7 +72,7 @@ func main() {
 
 	err = enclave.SetLoggerLevel(settings.LogLevel)
 	if err != nil {
-		enclaveSetup.SendError(fmt.Sprintf("failed to set logger level: %v", err))
+		_ = enclaveSetup.SendError(fmt.Sprintf("failed to set logger level: %v", err))
 		tmpLogger.Fatal().Err(err).Msg("Failed to set logger level.")
 	}
 
