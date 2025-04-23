@@ -36,6 +36,7 @@ type Controller struct {
 	logger                 *zerolog.Logger
 	publicKey              *ecdsa.PublicKey
 	nsmResult              *nitrite.Result
+	PCRs                   map[uint][]byte
 	vehicleContractAddress common.Address
 	chainID                uint64
 	devLicense             string
@@ -54,6 +55,10 @@ func NewController(
 	if privateKey == nil {
 		return nil, errors.New("private key is nil")
 	}
+	_, nsmResult, err := attest.GetNSMAttestation(new(request.Attestation))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get NSM attestation: %w", err)
+	}
 	return &Controller{
 		identityClient:  identityClient,
 		telemetryClient: telemetryClient,
@@ -62,6 +67,7 @@ func NewController(
 		publicKey:       &privateKey.PublicKey,
 		devLicense:      settings.DeveloperLicense,
 		getCertFunc:     getCertFunc,
+		PCRs:            nsmResult.Document.PCRs,
 	}, nil
 }
 
@@ -240,7 +246,7 @@ func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloud
 		Time:       time.Now().UTC(),
 		Odometer:   odometer,
 		VehicleDID: vehicleDID,
-		PCRs:       c.nsmResult.Document.PCRs,
+		PCRs:       c.PCRs,
 	}
 	attBytes, err := json.Marshal(odometerAttestation)
 	if err != nil {

@@ -28,7 +28,6 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 	"github.com/hf/nsm/request"
@@ -81,7 +80,6 @@ func createApp(logger *zerolog.Logger, ctrl *Controller) *fiber.App {
 		EnableStackTrace:  true,
 		StackTraceHandler: nil,
 	}))
-	app.Use(cors.New())
 
 	// Swagger documentation
 	app.Get("/swagger/*", swagger.HandlerDefault)
