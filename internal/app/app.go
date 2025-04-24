@@ -26,7 +26,12 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
@@ -248,6 +253,10 @@ type AddSignerRequest struct {
 	SignerAddress       string `json:"signerAddress"`
 	AttestationDocument []byte `json:"attestationDocument"`
 }
+type AddSignerResponse struct {
+	TxHash       string `json:"txHash"`
+	AlreadyAdded bool   `json:"alreadyAdded"`
+}
 
 func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, publicKey *ecdsa.PublicKey) error {
 	endpoint, err := url.JoinPath(settings.SignerRegistryURL, "add-signer")
@@ -287,5 +296,48 @@ func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.
 		return fmt.Errorf("failed to register keys: %s", string(body))
 	}
 
+	var addSignerResponse AddSignerResponse
+	err = json.NewDecoder(resp.Body).Decode(&addSignerResponse)
+	if err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if addSignerResponse.AlreadyAdded {
+		return nil
+	}
+	rpcClient, err := rpc.DialOptions(ctx, settings.EthereumRPCURL, rpc.WithHTTPClient(httpClient))
+	if err != nil {
+		return fmt.Errorf("failed to connect to Ethereum client: %w", err)
+	}
+	client := ethclient.NewClient(rpcClient)
+	txHash := common.HexToHash(addSignerResponse.TxHash)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	defer cancel()
+	logger.Info().Str("txHash", txHash.Hex()).Msg("waiting for signer registration to be mined")
+	_, err = WaitMined(ctx, client, txHash)
+	if err != nil {
+		return fmt.Errorf("failed to wait for transaction: %w", err)
+	}
 	return nil
+}
+
+// WaitMined waits for tx to be mined on the blockchain.
+// It stops waiting when the context is canceled.
+func WaitMined(ctx context.Context, b bind.DeployBackend, txHash common.Hash) (*types.Receipt, error) {
+	queryTicker := time.NewTicker(time.Second * 5)
+	defer queryTicker.Stop()
+
+	for {
+		receipt, err := b.TransactionReceipt(ctx, txHash)
+		if err == nil {
+			return receipt, nil
+		}
+
+		// Wait for the next round.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-queryTicker.C:
+		}
+	}
 }

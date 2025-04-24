@@ -25,6 +25,7 @@ type Settings struct {
 	TelemetryAPIURL   string `env:"TELEMETRY_API_URL"  yaml:"telemetryApiUrl"`
 	IdentityAPIURL    string `env:"IDENTITY_API_URL"   yaml:"identityApiUrl"`
 	SignerRegistryURL string `env:"SIGNER_REGISTRY_URL" yaml:"signerRegistryUrl"`
+	EthereumRPCURL    string `env:"ETHEREUM_RPC_URL"    yaml:"ethereumRpcUrl"`
 
 	// Dev fake key
 	DevFakeKey string `env:"DEV_FAKE_KEY" yaml:"devFakeKey"`
