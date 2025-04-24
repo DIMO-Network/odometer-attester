@@ -18,6 +18,7 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/hf/nitrite"
@@ -246,7 +247,11 @@ func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloud
 		Time:       time.Now().UTC(),
 		Odometer:   odometer,
 		VehicleDID: vehicleDID,
-		PCRs:       c.PCRs,
+		PCRs: pcrValues{
+			PCR0: c.PCRs[0],
+			PCR1: c.PCRs[1],
+			PCR2: c.PCRs[2],
+		},
 	}
 	attBytes, err := json.Marshal(odometerAttestation)
 	if err != nil {
@@ -278,13 +283,20 @@ func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloud
 }
 
 type odometerAttestation struct {
-	Source     string          `json:"source"`
-	Subject    string          `json:"subject"`
-	Producer   string          `json:"producer"`
-	Time       time.Time       `json:"time"`
-	Odometer   float64         `json:"odometer"`
-	VehicleDID string          `json:"vehicleDID"`
-	PCRs       map[uint][]byte `json:"pcrs"`
+	Source     string    `json:"source"`
+	Subject    string    `json:"subject"`
+	Producer   string    `json:"producer"`
+	Time       time.Time `json:"time"`
+	Odometer   float64   `json:"odometer"`
+	VehicleDID string    `json:"vehicleDID"`
+	PCRs       pcrValues `json:"pcrMeasurements"`
+}
+
+// pcrValues contains the values for the PCR0, PCR1, and PCR2.
+type pcrValues struct {
+	PCR0 hexutil.Bytes `json:"pcr0"`
+	PCR1 hexutil.Bytes `json:"pcr1"`
+	PCR2 hexutil.Bytes `json:"pcr2"`
 }
 
 // signMessage signs the message with the configured private key.

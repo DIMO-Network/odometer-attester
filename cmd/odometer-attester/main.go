@@ -43,8 +43,16 @@ const (
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 	tmpLogger := enclave.DefaultLogger(appName, os.Stdout)
-	tmpLogger.Debug().Msg("Starting enclave app")
+	logger := tmpLogger
+	go func() {
+		<-ctx.Done()
+		logger.Info().Msg("Received signal in enclave, shutting down...")
+	}()
+
+	logger.Debug().Msg("Starting enclave app")
 	cid, err := vsock.ContextID()
 	if err != nil {
 		tmpLogger.Fatal().Err(err).Msg("Failed to get context ID.")
@@ -59,25 +67,22 @@ func main() {
 	}
 
 	enclaveSetup := enclave.EnclaveSetup{}
-	err = enclaveSetup.Start(initPort)
+	err = enclaveSetup.Start(ctx, initPort)
 	if err != nil {
-		_ = enclaveSetup.SendError(fmt.Sprintf("failed to setup bridge: %v", err))
+		enclaveSetup.Close(ctx, nil)
 		tmpLogger.Error().Err(err).Msg("Failed to setup bridge.")
 	}
 	settings, err := enclave.ConfigFromEnvMap[config.Settings](enclaveSetup.Environment())
 	if err != nil {
-		_ = enclaveSetup.SendError(fmt.Sprintf("failed to parse environment variables: %v", err))
+		enclaveSetup.Close(ctx, fmt.Errorf("failed to parse environment variables: %v", err))
 		tmpLogger.Fatal().Err(err).Msg("Failed to parse environment variables.")
 	}
 
 	err = enclave.SetLoggerLevel(settings.LogLevel)
 	if err != nil {
-		_ = enclaveSetup.SendError(fmt.Sprintf("failed to set logger level: %v", err))
+		enclaveSetup.Close(ctx, fmt.Errorf("failed to set logger level: %v", err))
 		tmpLogger.Fatal().Err(err).Msg("Failed to set logger level.")
 	}
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
 
 	bridgeSettings := bridgecfg.BridgeSettings{
 		AppName: appName,
@@ -101,8 +106,9 @@ func main() {
 	}
 
 	// Send the bridge configuration to the enclave.
-	err = enclaveSetup.SendBridgeConfig(&bridgeSettings)
+	err = enclaveSetup.SendBridgeConfig(ctx, &bridgeSettings)
 	if err != nil {
+		enclaveSetup.Close(ctx, nil)
 		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
 
@@ -110,6 +116,7 @@ func main() {
 	tmpLogger.Debug().Msg("Waiting for bridge setup")
 	err = enclaveSetup.WaitForBridgeSetup()
 	if err != nil {
+		enclaveSetup.Close(ctx, nil)
 		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
 
