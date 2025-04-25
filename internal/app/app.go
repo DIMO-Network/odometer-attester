@@ -39,7 +39,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort, challengePort uint32, settings *config.Settings) (*fiber.App, *tls.Config, error) {
+func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort uint32, settings *config.Settings) (*fiber.App, *tls.Config, error) {
 	walletPrivateKey, certPrivateKey, err := GetKeys(settings, logger)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get keys: %w", err)

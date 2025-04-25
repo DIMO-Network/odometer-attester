@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/DIMO-Network/cloudevent v0.0.4
-	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250424180440-0761bb256837
+	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250425173121-bf34aab677d1
 	github.com/DIMO-Network/shared v0.12.10
 	github.com/ethereum/go-ethereum v1.15.7
 	github.com/fxamacker/cbor/v2 v2.8.0
@@ -48,6 +48,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
+	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect

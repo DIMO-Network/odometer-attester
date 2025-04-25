@@ -7,13 +7,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
 	// import docs for swagger generation.
 	bridgecfg "github.com/DIMO-Network/enclave-bridge/pkg/config"
 	"github.com/DIMO-Network/enclave-bridge/pkg/enclave"
+	"github.com/DIMO-Network/enclave-bridge/pkg/watchdog"
+	"github.com/rs/zerolog"
 
 	_ "github.com/DIMO-Network/odometer-attester/docs"
 	"github.com/DIMO-Network/odometer-attester/internal/app"
@@ -37,16 +38,20 @@ const (
 
 const (
 	serverTunnelPort uint32 = iota + 5001
-	challengeServerTunnelPort
 	clientTunnelPort
-	loggerPort
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	tmpLogger := enclave.DefaultLogger(appName, os.Stdout)
-	logger := tmpLogger
+	// Create a logger that can be used to log messages to the enclave-bridge.
+	logger, cleanup, err := enclave.GetAndSetDefaultLoggerWithSocket(appName, enclave.StdoutPort)
+	if err != nil {
+		logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+		logger.Fatal().Err(err).Msg("Failed to create logger socket.")
+	}
+	defer cleanup()
+
 	go func() {
 		<-ctx.Done()
 		logger.Info().Msg("Received signal in enclave, shutting down...")
@@ -55,40 +60,27 @@ func main() {
 	logger.Debug().Msg("Starting enclave app")
 	cid, err := vsock.ContextID()
 	if err != nil {
-		tmpLogger.Fatal().Err(err).Msg("Failed to get context ID.")
+		logger.Fatal().Err(err).Msg("Failed to get context ID.")
 	}
-	initPort := enclave.InitPort
-	if len(os.Args) > 1 {
-		initPort64, err := strconv.ParseUint(os.Args[1], 10, 32)
-		if err != nil {
-			tmpLogger.Fatal().Err(err).Msg("Failed to convert VSOCK_INIT_PORT to int")
-		}
-		initPort = uint32(initPort64)
-	}
-
 	enclaveSetup := enclave.EnclaveSetup{}
-	err = enclaveSetup.Start(ctx, initPort)
+	err = enclaveSetup.Start(ctx)
 	if err != nil {
-		_ = enclaveSetup.Close(ctx, nil)
-		tmpLogger.Error().Err(err).Msg("Failed to setup bridge.")
+		logger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
 	settings, err := enclave.ConfigFromEnvMap[config.Settings](enclaveSetup.Environment())
 	if err != nil {
-		_ = enclaveSetup.Close(ctx, fmt.Errorf("failed to parse environment variables: %v", err))
-		tmpLogger.Fatal().Err(err).Msg("Failed to parse environment variables.")
+		logger.Fatal().Err(err).Msg("Failed to parse environment variables.")
 	}
 
 	err = enclave.SetLoggerLevel(settings.LogLevel)
 	if err != nil {
-		_ = enclaveSetup.Close(ctx, fmt.Errorf("failed to set logger level: %v", err))
-		tmpLogger.Fatal().Err(err).Msg("Failed to set logger level.")
+		logger.Fatal().Err(err).Msg("Failed to set logger level.")
 	}
 
 	bridgeSettings := bridgecfg.BridgeSettings{
 		AppName: appName,
 		Logger: bridgecfg.LoggerSettings{
-			Level:           settings.LogLevel,
-			EnclaveDialPort: loggerPort,
+			Level: settings.LogLevel,
 		},
 		Servers: []bridgecfg.ServerSettings{
 			{
@@ -103,29 +95,21 @@ func main() {
 				RequestTimeout:  time.Minute * 5,
 			},
 		},
+		Watchdog: watchdog.NewStandardSettings(),
 	}
 
 	// Send the bridge configuration to the enclave.
 	err = enclaveSetup.SendBridgeConfig(ctx, &bridgeSettings)
 	if err != nil {
-		_ = enclaveSetup.Close(ctx, nil)
-		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
+		logger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
 
 	// Wait for the bridge to be setup.
-	tmpLogger.Debug().Msg("Waiting for bridge setup")
+	logger.Debug().Msg("Waiting for bridge setup")
 	err = enclaveSetup.WaitForBridgeSetup()
 	if err != nil {
-		_ = enclaveSetup.Close(ctx, nil)
-		tmpLogger.Fatal().Err(err).Msg("Failed to setup bridge.")
+		logger.Fatal().Err(err).Msg("Failed to setup bridge.")
 	}
-
-	// Create a logger that can be used to log messages to the enclave-bridge.
-	logger, cleanup, err := enclave.DefaultLoggerWithSocket(appName, loggerPort)
-	if err != nil {
-		tmpLogger.Fatal().Err(err).Msg("Failed to create logger socket.")
-	}
-	defer cleanup()
 
 	// Create a listener for the enclave web server.
 	listener, err := vsock.Listen(serverTunnelPort, nil)
@@ -135,7 +119,7 @@ func main() {
 	logger.Info().Msgf("Listening on %s", listener.Addr())
 
 	// Create the enclave server using the new listener and logger
-	enclaveApp, tlsConfig, err := app.CreateEnclaveWebServer(&logger, clientTunnelPort, challengeServerTunnelPort, &settings)
+	enclaveApp, tlsConfig, err := app.CreateEnclaveWebServer(&logger, clientTunnelPort, &settings)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Couldn't create enclave web server.")
 	}
