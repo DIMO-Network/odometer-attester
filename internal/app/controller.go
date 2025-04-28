@@ -29,9 +29,8 @@ const (
 
 type Controller struct {
 	telemetryClient        *telemetry.Client
-	logger                 *zerolog.Logger
 	publicKey              *ecdsa.PublicKey
-	PCRs                   map[uint][]byte
+	pcrs                   map[uint][]byte
 	vehicleContractAddress common.Address
 	chainID                uint64
 	devLicense             string
@@ -46,11 +45,11 @@ func NewController(
 	disClient *dis.Client,
 	privateKey *ecdsa.PrivateKey,
 	getCertFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error),
+	pcrs map[uint][]byte,
 ) (*Controller, error) {
 	if privateKey == nil {
 		return nil, errors.New("private key is nil")
 	}
-	// TODO: Need PCR values
 	return &Controller{
 		telemetryClient: telemetryClient,
 		disClient:       disClient,
@@ -58,6 +57,7 @@ func NewController(
 		publicKey:       &privateKey.PublicKey,
 		devLicense:      settings.DeveloperLicense,
 		getCertFunc:     getCertFunc,
+		pcrs:            pcrs,
 	}, nil
 }
 
@@ -74,6 +74,7 @@ func NewController(
 // @Failure 500 {object} codeResp
 // @Router /vehicle/odometer/{tokenId} [get]
 func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
+	logger := zerolog.Ctx(ctx.UserContext()).With().Str("component", "GetOdometer").Logger()
 	vehicleTokenID := ctx.Params("tokenId")
 	vehicleTokenIDUint, err := strconv.ParseUint(vehicleTokenID, 10, 32)
 	if err != nil {
@@ -85,18 +86,18 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 
 	odometer, err := c.telemetryClient.GetOdometer(ctx.Context(), uint32(vehicleTokenIDUint))
 	if err != nil {
-		c.logger.Error().Err(err).Msg("Failed to get odometer")
+		logger.Error().Err(err).Msg("Failed to get odometer")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get odometer")
 	}
 	attestation, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value)
 	if err != nil {
-		c.logger.Error().Err(err).Msg("Failed to create attestation")
+		logger.Error().Err(err).Msg("Failed to create attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create attestation")
 	}
 	if upload {
 		err = c.disClient.UploadAttestation(ctx.Context(), attestation.Data)
 		if err != nil {
-			c.logger.Error().Err(err).Msg("Failed to upload attestation")
+			logger.Error().Err(err).Msg("Failed to upload attestation")
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload attestation")
 		}
 	}
@@ -117,9 +118,9 @@ func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloud
 		Odometer:   odometer,
 		VehicleDID: vehicleDID,
 		PCRs: pcrValues{
-			PCR0: c.PCRs[0],
-			PCR1: c.PCRs[1],
-			PCR2: c.PCRs[2],
+			PCR0: c.pcrs[0],
+			PCR1: c.pcrs[1],
+			PCR2: c.pcrs[2],
 		},
 	}
 	attBytes, err := json.Marshal(odometerAttestation)

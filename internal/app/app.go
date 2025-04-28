@@ -56,9 +56,16 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort uint32, settings 
 		}
 		certFunc = tlsConfig.GetCertificate
 	}
+	attRequest := &request.Attestation{
+		PublicKey: crypto.FromECDSAPub(&walletPrivateKey.PublicKey),
+	}
+	document, nsmResult, err := attest.GetNSMAttestation(attRequest)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get NSM attestation: %w", err)
+	}
 
 	// Setup the controller with all its dependencies
-	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, certFunc)
+	ctrl, err := setupController(logger, settings, httpClient, walletPrivateKey, certFunc, nsmResult.Document.PCRs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to setup controller: %w", err)
 	}
@@ -71,7 +78,7 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort uint32, settings 
 
 	app := createApp(logger, ctrl, wellKnownCtrl)
 
-	err = registerKeys(context.Background(), logger, settings, httpClient, &walletPrivateKey.PublicKey)
+	err = registerKeys(context.Background(), logger, settings, httpClient, &walletPrivateKey.PublicKey, document)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -152,7 +159,13 @@ type codeResp struct {
 }
 
 // setupController creates and configures all the clients needed for the controller.
-func setupController(logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, privateKey *ecdsa.PrivateKey, getCert func(*tls.ClientHelloInfo) (*tls.Certificate, error)) (*Controller, error) {
+func setupController(logger *zerolog.Logger,
+	settings *config.Settings,
+	httpClient *http.Client,
+	privateKey *ecdsa.PrivateKey,
+	getCert func(*tls.ClientHelloInfo) (*tls.Certificate, error),
+	pcrs map[uint][]byte,
+) (*Controller, error) {
 	// Setup dex client for developer license tokens
 	dexClient, err := dex.NewClient(settings, privateKey, httpClient, logger.With().Str("component", "dex").Logger())
 	if err != nil {
@@ -192,7 +205,7 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, httpClie
 	}
 
 	// Create controller with all required clients
-	return NewController(settings, telemetryClient, disClient, privateKey, getCert)
+	return NewController(settings, telemetryClient, disClient, privateKey, getCert, pcrs)
 }
 
 // setupTLSConfig configures TLS settings including certificate management
@@ -239,19 +252,12 @@ type AddSignerResponse struct {
 	AlreadyAdded bool   `json:"alreadyAdded"`
 }
 
-func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, publicKey *ecdsa.PublicKey) error {
+func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, publicKey *ecdsa.PublicKey, document []byte) error {
 	endpoint, err := url.JoinPath(settings.SignerRegistryURL, "add-signer")
 	if err != nil {
 		return fmt.Errorf("failed to join URL: %w", err)
 	}
 
-	attRequest := &request.Attestation{
-		PublicKey: crypto.FromECDSAPub(publicKey),
-	}
-	document, _, err := attest.GetNSMAttestation(attRequest)
-	if err != nil {
-		return fmt.Errorf("failed to get NSM attestation: %w", err)
-	}
 	signerRequest := AddSignerRequest{
 		SignerAddress:       crypto.PubkeyToAddress(*publicKey).Hex(),
 		AttestationDocument: document,
@@ -290,12 +296,12 @@ func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.
 	if err != nil {
 		return fmt.Errorf("failed to connect to Ethereum client: %w", err)
 	}
-	client := ethclient.NewClient(rpcClient)
+	ethClient := ethclient.NewClient(rpcClient)
 	txHash := common.HexToHash(addSignerResponse.TxHash)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 	logger.Info().Str("txHash", txHash.Hex()).Msg("waiting for signer registration to be mined")
-	_, err = WaitMined(ctx, client, txHash)
+	_, err = WaitMined(ctx, ethClient, txHash)
 	if err != nil {
 		return fmt.Errorf("failed to wait for transaction: %w", err)
 	}
