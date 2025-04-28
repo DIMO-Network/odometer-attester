@@ -21,6 +21,7 @@ import (
 	"github.com/DIMO-Network/enclave-bridge/pkg/enclave"
 	"github.com/DIMO-Network/enclave-bridge/pkg/wellknown"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
+	"github.com/DIMO-Network/odometer-attester/internal/client/dis"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
@@ -184,8 +185,14 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, httpClie
 		return nil, err
 	}
 
+	// Setup token exchange client with token cache
+	disClient, err := dis.NewClient(settings, devLicenseTokenCache, httpClient)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create controller with all required clients
-	return NewController(settings, logger, telemetryClient, privateKey, getCert)
+	return NewController(settings, telemetryClient, disClient, privateKey, getCert)
 }
 
 // setupTLSConfig configures TLS settings including certificate management

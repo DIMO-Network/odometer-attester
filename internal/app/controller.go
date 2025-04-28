@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/DIMO-Network/cloudevent"
+	"github.com/DIMO-Network/odometer-attester/internal/client/dis"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,12 +37,13 @@ type Controller struct {
 	devLicense             string
 	privateKey             *ecdsa.PrivateKey
 	getCertFunc            func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+	disClient              *dis.Client
 }
 
 func NewController(
 	settings *config.Settings,
-	logger *zerolog.Logger,
 	telemetryClient *telemetry.Client,
+	disClient *dis.Client,
 	privateKey *ecdsa.PrivateKey,
 	getCertFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error),
 ) (*Controller, error) {
@@ -50,7 +53,7 @@ func NewController(
 	// TODO: Need PCR values
 	return &Controller{
 		telemetryClient: telemetryClient,
-		logger:          logger,
+		disClient:       disClient,
 		privateKey:      privateKey,
 		publicKey:       &privateKey.PublicKey,
 		devLicense:      settings.DeveloperLicense,
@@ -65,6 +68,7 @@ func NewController(
 // @Accept json
 // @Produce json
 // @Param tokenId path string true "Vehicle Token ID"
+// @Param upload query string false "Upload attestation DIS"
 // @Success 200 {object} cloudevent.CloudEvent[json.RawMessage]
 // @Failure 400 {object} codeResp
 // @Failure 500 {object} codeResp
@@ -76,6 +80,9 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid vehicle token Id")
 	}
 
+	uploadQuery := ctx.Query("upload")
+	upload := strings.EqualFold(uploadQuery, "true")
+
 	odometer, err := c.telemetryClient.GetOdometer(ctx.Context(), uint32(vehicleTokenIDUint))
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get odometer")
@@ -86,7 +93,13 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 		c.logger.Error().Err(err).Msg("Failed to create attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create attestation")
 	}
-
+	if upload {
+		err = c.disClient.UploadAttestation(ctx.Context(), attestation.Data)
+		if err != nil {
+			c.logger.Error().Err(err).Msg("Failed to upload attestation")
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload attestation")
+		}
+	}
 	return ctx.JSON(attestation)
 }
 

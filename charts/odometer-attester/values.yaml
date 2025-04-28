@@ -23,7 +23,7 @@ bridge:
     DEVELOPER_LICENSE: '0x332b18C8d30970FEc524b9f94091AD81d7C13EfD'
     CHAIN_ID: '137'
     DEX_URL: https://auth.dimo.zone
-    IDENTITY_API_URL: https://identity-api.dimo.zone
+    DIS_API_URL: https://dis-api.dimo.zone
     TELEMETRY_API_URL: https://telemetry-api.dimo.zone
     TOKEN_EXCHANGE_URL: https://token-exchange-api.dimo.zone
     SIGNER_REGISTRY_URL: https://enclave-signer-registry.dev.dimo.zone

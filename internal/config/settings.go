@@ -23,7 +23,7 @@ type Settings struct {
 	TokenExchangeURL  string `env:"TOKEN_EXCHANGE_URL" yaml:"tokenExchangeUrl"`
 	DexURL            string `env:"DEX_URL"            yaml:"dexUrl"`
 	TelemetryAPIURL   string `env:"TELEMETRY_API_URL"  yaml:"telemetryApiUrl"`
-	IdentityAPIURL    string `env:"IDENTITY_API_URL"   yaml:"identityApiUrl"`
+	DISAPIURL         string `env:"DIS_API_URL"         yaml:"disApiUrl"`
 	SignerRegistryURL string `env:"SIGNER_REGISTRY_URL" yaml:"signerRegistryUrl"`
 	EthereumRPCURL    string `env:"ETHEREUM_RPC_URL"    yaml:"ethereumRpcUrl"`
 
