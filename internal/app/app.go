@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -20,8 +18,9 @@ import (
 	"github.com/DIMO-Network/enclave-bridge/pkg/certs"
 	"github.com/DIMO-Network/enclave-bridge/pkg/certs/acme"
 	"github.com/DIMO-Network/enclave-bridge/pkg/client"
+	"github.com/DIMO-Network/enclave-bridge/pkg/enclave"
+	"github.com/DIMO-Network/enclave-bridge/pkg/wellknown"
 	"github.com/DIMO-Network/odometer-attester/internal/client/dex"
-	"github.com/DIMO-Network/odometer-attester/internal/client/identity"
 	"github.com/DIMO-Network/odometer-attester/internal/client/telemetry"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokencache"
 	"github.com/DIMO-Network/odometer-attester/internal/client/tokenexchange"
@@ -40,7 +39,7 @@ import (
 )
 
 func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort uint32, settings *config.Settings) (*fiber.App, *tls.Config, error) {
-	walletPrivateKey, certPrivateKey, err := GetKeys(settings, logger)
+	walletPrivateKey, certPrivateKey, err := enclave.CreateKeys()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get keys: %w", err)
 	}
@@ -63,16 +62,22 @@ func CreateEnclaveWebServer(logger *zerolog.Logger, clientPort uint32, settings 
 		return nil, nil, fmt.Errorf("failed to setup controller: %w", err)
 	}
 
-	app := createApp(logger, ctrl)
+	// Setup NSM controller
+	wellKnownCtrl, err := wellknown.NewController(&walletPrivateKey.PublicKey, certFunc)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to setup NSM controller: %w", err)
+	}
+
+	app := createApp(logger, ctrl, wellKnownCtrl)
 
 	err = registerKeys(context.Background(), logger, settings, httpClient, &walletPrivateKey.PublicKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to register keys: %w", err)
+		return nil, nil, err
 	}
 	return app, tlsConfig, nil
 }
 
-func createApp(logger *zerolog.Logger, ctrl *Controller) *fiber.App {
+func createApp(logger *zerolog.Logger, ctrl *Controller, wellKnownCtrl *wellknown.Controller) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -86,22 +91,19 @@ func createApp(logger *zerolog.Logger, ctrl *Controller) *fiber.App {
 		StackTraceHandler: nil,
 	}))
 
+	app.Use(func(c *fiber.Ctx) error {
+		userCtx := logger.With().Str("httpPath", strings.TrimPrefix(c.Path(), "/")).
+			Str("httpMethod", c.Method()).Logger().WithContext(c.UserContext())
+		c.SetUserContext(userCtx)
+		return c.Next()
+	})
+
 	// Swagger documentation
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	app.Get("/", HealthCheck)
-	app.Get("/forward", func(ctx *fiber.Ctx) error {
-		logger.Debug().Msg("Forward request received")
-		msg := ctx.Query("msg")
-		if msg == "" {
-			msg = "Hello, World!"
-		}
-		return ctx.JSON(map[string]string{"data": "Hello From The Enclave! Did you say: " + msg})
-	})
-	app.Get("/.well-known/nsm-attestation", ctrl.GetNSMAttestations)
-	app.Get("/vehicle/:tokenId", ctrl.GetVehicleInfo)
-	app.Get("/vehicle/:tokenId/odometer", ctrl.GetOdometer)
-	app.Get("/keys", ctrl.GetKeys)
+	wellknown.RegisterRoutes(app, wellKnownCtrl)
+	app.Get("/vehicle/odometer/:tokenId", ctrl.GetOdometer)
 	return app
 }
 
@@ -148,36 +150,8 @@ type codeResp struct {
 	Code    int    `json:"code"`
 }
 
-func GetKeys(settings *config.Settings, logger *zerolog.Logger) (*ecdsa.PrivateKey, *ecdsa.PrivateKey, error) {
-	certPrivateKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate cert private key: %w", err)
-	}
-	var walletPrivateKey *ecdsa.PrivateKey
-	walletPk := settings.DevFakeKey
-	if walletPk == "" {
-		walletPrivateKey, err = crypto.GenerateKey()
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to generate wallet private key: %w", err)
-		}
-	} else {
-		logger.Warn().Msgf("Using unsafe injected key: %s", walletPk)
-		walletPrivateKey, err = crypto.HexToECDSA(walletPk)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to convert hex to ecdsa private key: %w", err)
-		}
-	}
-	return walletPrivateKey, certPrivateKey, nil
-}
-
 // setupController creates and configures all the clients needed for the controller.
 func setupController(logger *zerolog.Logger, settings *config.Settings, httpClient *http.Client, privateKey *ecdsa.PrivateKey, getCert func(*tls.ClientHelloInfo) (*tls.Certificate, error)) (*Controller, error) {
-	// Setup identity client
-	identClient, err := identity.NewClient(settings.IdentityAPIURL, httpClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create identity client: %w", err)
-	}
-
 	// Setup dex client for developer license tokens
 	dexClient, err := dex.NewClient(settings, privateKey, httpClient, logger.With().Str("component", "dex").Logger())
 	if err != nil {
@@ -211,7 +185,7 @@ func setupController(logger *zerolog.Logger, settings *config.Settings, httpClie
 	}
 
 	// Create controller with all required clients
-	return NewController(settings, logger, identClient, telemetryClient, privateKey, getCert)
+	return NewController(settings, logger, telemetryClient, privateKey, getCert)
 }
 
 // setupTLSConfig configures TLS settings including certificate management

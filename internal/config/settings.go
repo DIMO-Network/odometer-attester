@@ -27,8 +27,5 @@ type Settings struct {
 	SignerRegistryURL string `env:"SIGNER_REGISTRY_URL" yaml:"signerRegistryUrl"`
 	EthereumRPCURL    string `env:"ETHEREUM_RPC_URL"    yaml:"ethereumRpcUrl"`
 
-	// Dev fake key
-	DevFakeKey string `env:"DEV_FAKE_KEY" yaml:"devFakeKey"`
-
 	TLS config.TLSConfig `envPrefix:"TLS_"`
 }

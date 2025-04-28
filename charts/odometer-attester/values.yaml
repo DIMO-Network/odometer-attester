@@ -8,7 +8,7 @@ bridge:
   image:
     repository: dimozone/enclave-bridge
     pullPolicy: IfNotPresent
-    tag: bf34aab
+    tag: 3c96082
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:

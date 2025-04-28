@@ -121,8 +121,11 @@ func main() {
 	// Create the enclave server using the new listener and logger
 	enclaveApp, tlsConfig, err := app.CreateEnclaveWebServer(&logger, clientTunnelPort, &settings)
 	if err != nil {
+		_ = listener.Close()
+		_ = enclaveSetup.Close()
 		logger.Fatal().Err(err).Msg("Couldn't create enclave web server.")
 	}
+	_ = enclaveSetup.Close()
 
 	group, gCtx := errgroup.WithContext(ctx)
 	RunFiberWithListener(gCtx, enclaveApp, listener, tlsConfig, group)
