@@ -305,6 +305,7 @@ func registerKeys(ctx context.Context, logger *zerolog.Logger, settings *config.
 // WaitMined waits for tx to be mined on the blockchain.
 // It stops waiting when the context is canceled.
 func WaitMined(ctx context.Context, b bind.DeployBackend, txHash common.Hash) (*types.Receipt, error) {
+	logger := zerolog.Ctx(ctx).With().Str("component", "waitMined").Logger()
 	queryTicker := time.NewTicker(time.Second * 5)
 	defer queryTicker.Stop()
 
@@ -313,7 +314,7 @@ func WaitMined(ctx context.Context, b bind.DeployBackend, txHash common.Hash) (*
 		if err == nil {
 			return receipt, nil
 		}
-
+		logger.Error().Err(err).Msg("failed to get transaction receipt trying again in 5 seconds")
 		// Wait for the next round.
 		select {
 		case <-ctx.Done():
