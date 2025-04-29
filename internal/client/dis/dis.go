@@ -12,10 +12,6 @@ import (
 	"github.com/DIMO-Network/odometer-attester/internal/config"
 )
 
-const (
-	tokenExchangeEndpoint = "/v1/tokens/exchange" //nolint:gosec
-)
-
 // Client is a client for interacting with the token exchange API.
 type Client struct {
 	httpClient   *http.Client
@@ -43,10 +39,10 @@ func NewClient(settings *config.Settings, tokenCache *tokencache.Cache, httpClie
 		return nil, fmt.Errorf("HTTP client is required")
 	}
 
-	// Create token exchange URL
-	disAPIURL, err := url.JoinPath(settings.DISAPIURL, tokenExchangeEndpoint)
+	// Create DIS API URL
+	disAPIURL, err := url.JoinPath(settings.DISAPIURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create token exchange URL: %w", err)
+		return nil, fmt.Errorf("failed to create DIS API URL: %w", err)
 	}
 
 	return &Client{

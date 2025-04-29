@@ -208,7 +208,7 @@ func setupController(logger *zerolog.Logger,
 	return NewController(settings, telemetryClient, disClient, privateKey, getCert, pcrs)
 }
 
-// setupTLSConfig configures TLS settings including certificate management
+// setupTLSConfig configures TLS settings including certificate management.
 func setupTLSConfig(settings *config.Settings, certPrivateKey *ecdsa.PrivateKey, httpClient *http.Client, logger *zerolog.Logger) (*tls.Config, error) {
 	if settings.TLS.LocalCerts.CertFile != "" && settings.TLS.LocalCerts.KeyFile != "" {
 		certFunc, err := certs.GetCertificatesFromSettings(&settings.TLS.LocalCerts)

@@ -50,14 +50,29 @@ func NewController(
 	if privateKey == nil {
 		return nil, errors.New("private key is nil")
 	}
+	if pcrs == nil {
+		return nil, errors.New("pcrs are nil")
+	}
+	if len(pcrs) != 3 {
+		return nil, errors.New("pcrs must be 3")
+	}
+	if disClient == nil {
+		return nil, errors.New("dis client is nil")
+	}
+	if telemetryClient == nil {
+		return nil, errors.New("telemetry client is nil")
+	}
+
 	return &Controller{
-		telemetryClient: telemetryClient,
-		disClient:       disClient,
-		privateKey:      privateKey,
-		publicKey:       &privateKey.PublicKey,
-		devLicense:      settings.DeveloperLicense,
-		getCertFunc:     getCertFunc,
-		pcrs:            pcrs,
+		telemetryClient:        telemetryClient,
+		disClient:              disClient,
+		privateKey:             privateKey,
+		publicKey:              &privateKey.PublicKey,
+		devLicense:             settings.DeveloperLicense,
+		getCertFunc:            getCertFunc,
+		pcrs:                   pcrs,
+		vehicleContractAddress: settings.VehicleNFTContractAddress,
+		chainID:                settings.ChainID,
 	}, nil
 }
 
