@@ -53,8 +53,8 @@ func NewController(
 	if pcrs == nil {
 		return nil, errors.New("pcrs are nil")
 	}
-	if len(pcrs) != 3 {
-		return nil, errors.New("pcrs must be 3")
+	if pcrs[0] == nil || pcrs[1] == nil || pcrs[2] == nil {
+		return nil, errors.New("pcrs are nil")
 	}
 	if disClient == nil {
 		return nil, errors.New("dis client is nil")
