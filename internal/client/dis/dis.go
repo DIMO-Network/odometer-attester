@@ -81,7 +81,7 @@ func (c *Client) UploadAttestation(ctx context.Context, doc []byte) error {
 	// Check status code
 	if resp.StatusCode >= http.StatusMultipleChoices {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("DIS API returned non-200 status code: %d; %s", resp.StatusCode, string(bodyBytes))
+		return fmt.Errorf("DIS returned non-200 status code: %d; %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	return nil

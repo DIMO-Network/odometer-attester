@@ -149,7 +149,7 @@ func (c *Client) GetToken(ctx context.Context, key string) (string, error) {
 
 	if submitResp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(submitResp.Body)
-		return "", fmt.Errorf("token exchange API returned non-200 status code: %d; %s", submitResp.StatusCode, string(bodyBytes))
+		return "", fmt.Errorf("dex API returned non-200 status code: %d; %s", submitResp.StatusCode, string(bodyBytes))
 	}
 
 	submitBody, err := io.ReadAll(submitResp.Body)

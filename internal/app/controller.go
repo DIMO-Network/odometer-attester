@@ -108,19 +108,23 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 		logger.Error().Err(err).Msg("Failed to get odometer")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get odometer")
 	}
-	attestation, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value, isPersonal)
+	attEvent, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value, isPersonal)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to create attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create attestation")
 	}
 	if upload {
-		err = c.disClient.UploadAttestation(ctx.Context(), attestation.Data)
+		attBytes, err := json.Marshal(attEvent)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to marshal attestation")
+		}
+		err = c.disClient.UploadAttestation(logger.WithContext(ctx.Context()), attBytes)
 		if err != nil {
 			logger.Error().Err(err).Msg("Failed to upload attestation")
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload attestation")
 		}
 	}
-	return ctx.JSON(attestation)
+	return ctx.JSON(attEvent)
 }
 
 func (c *Controller) createAttestation(tokenID uint32, odometer float64, isPersonal bool) (*cloudevent.CloudEvent[json.RawMessage], error) {
