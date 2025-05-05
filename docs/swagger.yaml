@@ -97,6 +97,10 @@ paths:
         in: query
         name: upload
         type: string
+      - description: Is personal attestation
+        in: query
+        name: isPersonal
+        type: string
       produces:
       - application/json
       responses:

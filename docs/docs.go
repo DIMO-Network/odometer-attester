@@ -65,6 +65,12 @@ const docTemplate = `{
                         "description": "Upload attestation DIS",
                         "name": "upload",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Is personal attestation",
+                        "name": "isPersonal",
+                        "in": "query"
                     }
                 ],
                 "responses": {
