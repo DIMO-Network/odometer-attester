@@ -84,6 +84,7 @@ func NewController(
 // @Produce json
 // @Param tokenId path string true "Vehicle Token ID"
 // @Param upload query string false "Upload attestation DIS"
+// @Param isPersonal query string false "Is personal attestation"
 // @Success 200 {object} cloudevent.CloudEvent[json.RawMessage]
 // @Failure 400 {object} codeResp
 // @Failure 500 {object} codeResp
@@ -99,12 +100,15 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	uploadQuery := ctx.Query("upload")
 	upload := strings.EqualFold(uploadQuery, "true")
 
+	isPersonalQuery := ctx.Query("isPersonal")
+	isPersonal := strings.EqualFold(isPersonalQuery, "true")
+
 	odometer, err := c.telemetryClient.GetOdometer(ctx.Context(), uint32(vehicleTokenIDUint))
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to get odometer")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get odometer")
 	}
-	attestation, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value)
+	attestation, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value, isPersonal)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to create attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create attestation")
@@ -119,7 +123,7 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	return ctx.JSON(attestation)
 }
 
-func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloudevent.CloudEvent[json.RawMessage], error) {
+func (c *Controller) createAttestation(tokenID uint32, odometer float64, isPersonal bool) (*cloudevent.CloudEvent[json.RawMessage], error) {
 	vehicleDID := cloudevent.NFTDID{
 		ContractAddress: c.vehicleContractAddress,
 		ChainID:         c.chainID,
@@ -142,7 +146,7 @@ func (c *Controller) createAttestation(tokenID uint32, odometer float64) (*cloud
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal attestation: %w", err)
 	}
-	signature, err := signMessage(string(attBytes), c.privateKey)
+	signature, err := signMessage(string(attBytes), c.privateKey, isPersonal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign message: %w", err)
 	}
@@ -185,8 +189,11 @@ type pcrValues struct {
 }
 
 // signMessage signs the message with the configured private key.
-func signMessage(message string, privateKey *ecdsa.PrivateKey) (string, error) {
-	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), message)
+func signMessage(message string, privateKey *ecdsa.PrivateKey, isPersonal bool) (string, error) {
+	msg := message
+	if isPersonal {
+		msg = fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), message)
+	}
 	sign := crypto.Keccak256Hash([]byte(msg))
 	signature, err := crypto.Sign(sign.Bytes(), privateKey)
 	if err != nil {
