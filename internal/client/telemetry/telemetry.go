@@ -25,20 +25,21 @@ query lastSeen($tokenId: Int!) {
   }
 }
 `
-const odometerQueryInterncal = `
-query interval($tokenId: Int!, $from: String!, $to: String!, $interval: String!) {
-   signals(
-    tokenId: $tokenId
-    from: $from
-	to: $to
-	interval: $interval
-  ) {
-    timestamp
-		minDist powertrainTransmissionTravelledDistance(agg:Min)
-		maxDist powertrainTransmissionTravelledDistance(agg:Max)
-  }
-}
-`
+
+// const odometerQueryInterval = `
+// query interval($tokenId: Int!, $from: String!, $to: String!, $interval: String!) {
+//    signals(
+//     tokenId: $tokenId
+//     from: $from
+// 	to: $to
+// 	interval: $interval
+//   ) {
+//     timestamp
+// 		minDist powertrainTransmissionTravelledDistance(agg:Min)
+// 		maxDist powertrainTransmissionTravelledDistance(agg:Max)
+//   }
+// }
+// `
 
 // Client interacts with the telemetry GraphQL API.
 type Client struct {
