@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	"math/big"
 	"strings"
 	"time"
 
@@ -92,8 +92,8 @@ func NewController(
 func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	logger := zerolog.Ctx(ctx.UserContext()).With().Str("component", "GetOdometer").Logger()
 	vehicleTokenID := ctx.Params("tokenId")
-	vehicleTokenIDUint, err := strconv.ParseUint(vehicleTokenID, 10, 32)
-	if err != nil {
+	vehicleTokenIDUint, ok := new(big.Int).SetString(vehicleTokenID, 10)
+	if !ok {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid vehicle token Id")
 	}
 
@@ -103,12 +103,12 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	isPersonalQuery := ctx.Query("isPersonal")
 	isPersonal := strings.EqualFold(isPersonalQuery, "true")
 
-	odometer, err := c.telemetryClient.GetOdometer(ctx.Context(), uint32(vehicleTokenIDUint))
+	odometer, err := c.telemetryClient.GetOdometer(ctx.Context(), vehicleTokenIDUint)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to get odometer")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get odometer")
 	}
-	attEvent, err := c.createAttestation(uint32(vehicleTokenIDUint), odometer.PowertrainTransmissionTravelledDistance.Value, isPersonal)
+	attEvent, err := c.createAttestation(vehicleTokenIDUint, odometer.PowertrainTransmissionTravelledDistance.Value, isPersonal)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to create attestation")
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create attestation")
@@ -127,8 +127,8 @@ func (c *Controller) GetOdometer(ctx *fiber.Ctx) error {
 	return ctx.JSON(attEvent)
 }
 
-func (c *Controller) createAttestation(tokenID uint32, odometer float64, isPersonal bool) (*cloudevent.CloudEvent[json.RawMessage], error) {
-	vehicleDID := cloudevent.NFTDID{
+func (c *Controller) createAttestation(tokenID *big.Int, odometer float64, isPersonal bool) (*cloudevent.CloudEvent[json.RawMessage], error) {
+	vehicleDID := cloudevent.ERC721DID{
 		ContractAddress: c.vehicleContractAddress,
 		ChainID:         c.chainID,
 		TokenID:         tokenID,

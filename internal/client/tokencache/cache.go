@@ -3,6 +3,7 @@ package tokencache
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -92,7 +93,7 @@ func DevLicenseTokenIDFromKey(key string) (string, error) {
 }
 
 // VehicleTokenKey returns a key for the specified vehicle token ID.
-func VehicleTokenKey(vehicleTokenID uint32) string {
+func VehicleTokenKey(vehicleTokenID *big.Int) string {
 	return fmt.Sprintf("vehicle:%d", vehicleTokenID)
 }
 
