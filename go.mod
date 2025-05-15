@@ -3,7 +3,7 @@ module github.com/DIMO-Network/odometer-attester
 go 1.24
 
 require (
-	github.com/DIMO-Network/cloudevent v0.0.5-0.20250514184900-f8c602c72300
+	github.com/DIMO-Network/cloudevent v0.1.0
 	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250428133245-3c96082c462e
 	github.com/DIMO-Network/shared v0.12.10
 	github.com/ethereum/go-ethereum v1.15.11
