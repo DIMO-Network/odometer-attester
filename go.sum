@@ -1,5 +1,7 @@
 github.com/DIMO-Network/cloudevent v0.1.0 h1:ze0ngJQBXjSSyBnEAUO+YvClvkqM68kNko/czY3GfLo=
 github.com/DIMO-Network/cloudevent v0.1.0/go.mod h1:RS9Byb0ycb5b7OFe9y+xpF0nkR4pYYS6Om/ccs3N5Z4=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250516171814-c227118d4c9b h1:lul/pU9ntcB0izc5j+5WB49sYmrB+zawk2C+459Nlyg=
+github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250516171814-c227118d4c9b/go.mod h1:EvhI68qQpABSOBitxhm/eqsJzsPest+f0h2H/GTkphs=
 github.com/DIMO-Network/shared v0.12.10 h1:taiAs09lyfV34SpGjesNjd4ljbMcCKrm18rhG+SizaM=
 github.com/DIMO-Network/shared v0.12.10/go.mod h1:lDHUKwwT2LW6Zvd42Nb33dXklRNTmfyOlbUNx2dQfGY=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
