@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/DIMO-Network/cloudevent v0.1.0
-	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250428133245-3c96082c462e
+	github.com/DIMO-Network/enclave-bridge v0.0.2-0.20250516171304-195da01ee49b
 	github.com/DIMO-Network/shared v0.12.10
 	github.com/ethereum/go-ethereum v1.15.11
 	github.com/fxamacker/cbor/v2 v2.8.0
@@ -31,6 +31,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/caarlos0/env/v11 v11.3.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/consensys/bavard v0.1.27 // indirect
 	github.com/consensys/gnark-crypto v0.16.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
